@@ -27,8 +27,10 @@
 
 ## Sound
 
-- Narrator: Kokoro `bm_george`, en-gb, speed 0.9, calm and low.
-- Bed: sea, wind and rain matched to the scene; a D-minor drone; "muffle" when indoors.
+- Narrator: Kokoro `am_michael`, en-us, speed 0.92. Studio/podcast processing, **no reverb on the voice**.
+- Bed: sea, wind and rain matched to the scene; "muffle" when indoors.
+- Score: changes every scene: warm string pad on a new chord, sparse piano on reflective moments,
+  a low heartbeat pulse under tension. Sits ~13–15 dB under the voice, swells in the pauses.
 - Signature cues: owl **hoot** + **music box** on the title and outro; low **boom** on reveals.
 
 ## Brand moments

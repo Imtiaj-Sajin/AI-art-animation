@@ -1,94 +1,698 @@
 {
   "title": "The Vanishing at Flannan Isles",
-  "voice": "bm_george",
-  "speed": 0.9,
-  "lang": "en-gb",
+  "voice": "am_michael",
+  "speed": 0.92,
+  "lang": "en-us",
   "scenePad": 0.9,
   "tail": 2.5,
   "soundscape": {
-    "hook":    { "sea": 0.25, "wind": 0.55, "rain": 0.35, "drone": 0.55, "muffle": 1 },
-    "title":   { "sea": 0.15, "wind": 0.2,  "rain": 0,    "drone": 0.35, "muffle": 1 },
-    "map":     { "sea": 0.35, "wind": 0.25, "rain": 0,    "drone": 0.35, "muffle": 0 },
-    "keepers": { "sea": 0.15, "wind": 0.15, "rain": 0,    "drone": 0.3,  "muffle": 1 },
-    "dark":    { "sea": 0.65, "wind": 0.7,  "rain": 0.55, "drone": 0.5,  "muffle": 0 },
-    "wait":    { "sea": 0.6,  "wind": 0.8,  "rain": 0.6,  "drone": 0.45, "muffle": 0 },
-    "arrival": { "sea": 0.45, "wind": 0.35, "rain": 0,    "drone": 0.4,  "muffle": 0 },
-    "inside":  { "sea": 0.2,  "wind": 0.3,  "rain": 0,    "drone": 0.55, "muffle": 1 },
-    "clues":   { "sea": 0.12, "wind": 0.15, "rain": 0,    "drone": 0.4,  "muffle": 1 },
-    "coats":   { "sea": 0.25, "wind": 0.5,  "rain": 0.35, "drone": 0.5,  "muffle": 1 },
-    "landing": { "sea": 0.75, "wind": 0.5,  "rain": 0,    "drone": 0.45, "muffle": 0 },
-    "myth":    { "sea": 0.1,  "wind": 0.1,  "rain": 0,    "drone": 0.4,  "muffle": 1 },
-    "theory":  { "sea": 0.8,  "wind": 0.65, "rain": 0.2,  "drone": 0.65, "muffle": 0 },
-    "ending":  { "sea": 0.3,  "wind": 0.15, "rain": 0,    "drone": 0.3,  "muffle": 0 },
-    "outro":   { "sea": 0.08, "wind": 0.1,  "rain": 0,    "drone": 0.25, "muffle": 1 }
+    "hook": {
+      "sea": 0.25,
+      "wind": 0.55,
+      "rain": 0.35,
+      "muffle": 1
+    },
+    "title": {
+      "sea": 0.15,
+      "wind": 0.2,
+      "rain": 0,
+      "muffle": 1
+    },
+    "map": {
+      "sea": 0.35,
+      "wind": 0.25,
+      "rain": 0,
+      "muffle": 0
+    },
+    "keepers": {
+      "sea": 0.15,
+      "wind": 0.15,
+      "rain": 0,
+      "muffle": 1
+    },
+    "dark": {
+      "sea": 0.65,
+      "wind": 0.7,
+      "rain": 0.55,
+      "muffle": 0
+    },
+    "wait": {
+      "sea": 0.6,
+      "wind": 0.8,
+      "rain": 0.6,
+      "muffle": 0
+    },
+    "arrival": {
+      "sea": 0.45,
+      "wind": 0.35,
+      "rain": 0,
+      "muffle": 0
+    },
+    "inside": {
+      "sea": 0.2,
+      "wind": 0.3,
+      "rain": 0,
+      "muffle": 1
+    },
+    "clues": {
+      "sea": 0.12,
+      "wind": 0.15,
+      "rain": 0,
+      "muffle": 1
+    },
+    "coats": {
+      "sea": 0.25,
+      "wind": 0.5,
+      "rain": 0.35,
+      "muffle": 1
+    },
+    "landing": {
+      "sea": 0.75,
+      "wind": 0.5,
+      "rain": 0,
+      "muffle": 0
+    },
+    "myth": {
+      "sea": 0.1,
+      "wind": 0.1,
+      "rain": 0,
+      "muffle": 1
+    },
+    "theory": {
+      "sea": 0.8,
+      "wind": 0.65,
+      "rain": 0.2,
+      "muffle": 0
+    },
+    "ending": {
+      "sea": 0.3,
+      "wind": 0.15,
+      "rain": 0,
+      "muffle": 0
+    },
+    "outro": {
+      "sea": 0.08,
+      "wind": 0.1,
+      "rain": 0,
+      "muffle": 1
+    }
   },
   "lines": [
-    { "id": "hook1", "scene": "hook", "text": "Three men lived on this island.", "pause": 0.7, "lead": 1.4, "sfx": [{ "type": "thunder", "at": -1.2 }] },
-    { "id": "hook2", "scene": "hook", "text": "When help finally arrived, all three were gone.", "pause": 0.9 },
-    { "id": "hook3", "scene": "hook", "text": "Two of them had taken their coats.", "pause": 0.6 },
-    { "id": "hook4", "scene": "hook", "text": "One of them... hadn't.", "pause": 1.3, "sfx": [{ "type": "boom", "at": 0.7 }] },
-    { "id": "hook5", "scene": "hook", "text": "Why would a man walk out into a winter storm, on the edge of the Atlantic... in his shirtsleeves?", "pause": 1.6, "sfx": [{ "type": "thunder", "at": 2.0 }] },
-
-    { "id": "title", "scene": "title", "text": "", "hold": 8.5, "sfx": [{ "type": "hoot", "at": 0.6 }, { "type": "musicbox", "at": 1.6 }, { "type": "boom", "at": 4.2 }] },
-
-    { "id": "map1", "scene": "map", "text": "December, nineteen hundred.", "pause": 0.6 },
-    { "id": "map2", "scene": "map", "text": "Twenty miles west of the Isle of Lewis, in Scotland's Outer Hebrides, a cluster of rocks rises out of the Atlantic. The Flannan Isles.", "pause": 0.6 },
-    { "id": "map3", "scene": "map", "text": "On the largest, Eilean Mòr, stood a brand new lighthouse. It had been shining for barely a year.", "say": "On the largest, Ellan More, stood a brand new lighthouse. It had been shining for barely a year.", "pause": 1.0 },
-
-    { "id": "keep1", "scene": "keepers", "text": "Three keepers lived there, keeping the light alive through the long winter nights.", "pause": 0.6 },
-    { "id": "keep2", "scene": "keepers", "text": "James Ducat, the principal keeper.", "pause": 0.4 },
-    { "id": "keep3", "scene": "keepers", "text": "Thomas Marshall, his assistant.", "pause": 0.4 },
-    { "id": "keep4", "scene": "keepers", "text": "And Donald McArthur, a local man filling in for a keeper who was off sick.", "pause": 1.1 },
-
-    { "id": "dark1", "scene": "dark", "text": "On the night of December the fifteenth, a steamer called the Archtor passed the islands in heavy weather.", "say": "On the night of December the fifteenth, a steamer called the Arktor passed the islands in heavy weather.", "pause": 0.5 },
-    { "id": "dark2", "scene": "dark", "text": "Her crew looked for the light...", "pause": 0.7 },
-    { "id": "dark3", "scene": "dark", "text": "...and saw only darkness.", "pause": 1.4, "sfx": [{ "type": "boom", "at": 0.9 }] },
-
-    { "id": "wait1", "scene": "wait", "text": "The Archtor reported it when she docked three days later. But the storms had closed in.", "say": "The Arktor reported it when she docked three days later. But the storms had closed in.", "pause": 0.5 },
-    { "id": "wait2", "scene": "wait", "text": "The relief boat, the Hesperus, couldn't sail. Day after day, the sea refused to let anyone through.", "pause": 0.5 },
-    { "id": "wait3", "scene": "wait", "text": "She finally reached the island at noon on the twenty-sixth of December. Eleven days after the light went out.", "pause": 1.1 },
-
-    { "id": "arr1", "scene": "arrival", "text": "There was no flag on the flagstaff. No supply boxes waiting at the landing. No one came down to meet them.", "pause": 0.6 },
-    { "id": "arr2", "scene": "arrival", "text": "Captain Harvie sounded the horn. He fired a flare into the sky.", "pause": 0.6, "sfx": [{ "type": "horn", "at": 1.2 }, { "type": "flare", "at": 2.9 }] },
-    { "id": "arr3", "scene": "arrival", "text": "Nothing answered.", "pause": 1.4 },
-
-    { "id": "in1", "scene": "inside", "text": "Relief keeper Joseph Moore climbed the steps alone.", "pause": 0.5 },
-    { "id": "in2", "scene": "inside", "text": "The gate was shut. The door was shut.", "pause": 0.5 },
-    { "id": "in3", "scene": "inside", "text": "Inside, the fire was cold. The beds were empty.", "pause": 0.5, "sfx": [{ "type": "ticks", "at": 0.0, "dur": 4.5 }] },
-    { "id": "in4", "scene": "inside", "text": "And the clock on the wall... had stopped.", "pause": 1.5, "sfx": [{ "type": "ticks", "at": 0.0, "dur": 1.6 }, { "type": "boom", "at": 2.0 }] },
-
-    { "id": "clue1", "scene": "clues", "text": "Yet nothing was out of place. The lamp had been cleaned and refilled, ready for another night.", "pause": 0.5 },
-    { "id": "clue2", "scene": "clues", "text": "The kitchen things were all clean. As Moore put it, they must have left some time after dinner.", "pause": 0.5 },
-    { "id": "clue3", "scene": "clues", "text": "The last entries on the log slate were from the fifteenth of December. Whatever happened... happened that day.", "pause": 1.1 },
-
-    { "id": "coat1", "scene": "coats", "text": "Then there were the coats.", "pause": 0.5 },
-    { "id": "coat2", "scene": "coats", "text": "Two sets of oilskins were gone. Ducat and Marshall had dressed for the storm.", "pause": 0.5 },
-    { "id": "coat3", "scene": "coats", "text": "But Donald McArthur's oilskins were still there.", "pause": 1.0, "sfx": [{ "type": "boom", "at": 1.6 }] },
-    { "id": "coat4", "scene": "coats", "text": "Whatever pulled him outside... he didn't stop to put on his coat.", "pause": 1.5, "sfx": [{ "type": "door", "at": 2.2 }] },
-
-    { "id": "land1", "scene": "landing", "text": "Days later, Superintendent Robert Muirhead searched the island's west landing.", "pause": 0.5 },
-    { "id": "land2", "scene": "landing", "text": "Iron railings were bent and twisted. A rock weighing more than a ton had been torn loose.", "pause": 0.5 },
-    { "id": "land3", "scene": "landing", "text": "A box of ropes, wedged in a crevice thirty-three metres above the sea, had been smashed, its ropes scattered.", "pause": 0.5 },
-    { "id": "land4", "scene": "landing", "text": "Turf had been ripped away even higher, more than sixty metres up the cliff.", "pause": 0.5 },
-    { "id": "land5", "scene": "landing", "text": "Muirhead wrote that the damage was difficult to believe... unless actually seen.", "pause": 1.3 },
-
-    { "id": "myth1", "scene": "myth", "text": "Over the years, the story grew darker.", "pause": 0.5 },
-    { "id": "myth2", "scene": "myth", "text": "Writers described an uneaten meal and an overturned chair. A logbook full of strange storms, weeping men and prayers, ending with the words: God is over all.", "pause": 0.7 },
-    { "id": "myth3", "scene": "myth", "text": "None of it was real. The meal and the chair came from a poem. The log entries were invented, years later.", "pause": 0.6, "sfx": [{ "type": "scratch", "at": 0.3 }, { "type": "scratch", "at": 2.6 }] },
-    { "id": "myth4", "scene": "myth", "text": "The true record is quieter... and somehow, more haunting.", "pause": 1.3 },
-
-    { "id": "th1", "scene": "theory", "text": "So what happened?", "pause": 0.7 },
-    { "id": "th2", "scene": "theory", "text": "Muirhead believed that Ducat and Marshall went down to the west landing to secure that box of ropes.", "pause": 0.5 },
-    { "id": "th3", "scene": "theory", "text": "McArthur, still inside, may have seen something from the window. Something enormous, rolling in from the Atlantic.", "pause": 0.5 },
-    { "id": "th4", "scene": "theory", "text": "He ran out without his coat... perhaps to warn them.", "pause": 0.6 },
-    { "id": "th5", "scene": "theory", "text": "One enormous wave. And all three were gone.", "pause": 1.8, "sfx": [{ "type": "wave", "at": -0.4 }] },
-
-    { "id": "end1", "scene": "ending", "text": "Their bodies were never found.", "pause": 1.2 },
-    { "id": "end2", "scene": "ending", "text": "Today, the Flannan Isles light still shines. But since nineteen seventy-one, no keeper has lived there. It keeps its watch alone.", "pause": 1.0 },
-    { "id": "end3", "scene": "ending", "text": "So what do you think happened on Eilean Mòr? Tell us in the comments.", "say": "So what do you think happened on Ellan More? Tell us in the comments.", "pause": 1.2 },
-
-    { "id": "out1", "scene": "outro", "text": "Some stories should never be forgotten. This is the House of Owls.", "pause": 0.6, "sfx": [{ "type": "musicbox", "at": -0.5 }] },
-    { "id": "out2", "scene": "outro", "text": "Keep watching. Keep learning. And one day... you'll be one of us.", "pause": 0.5 },
-    { "id": "out3", "scene": "outro", "text": "A member of the Owl Society.", "pause": 3.5, "sfx": [{ "type": "hoot", "at": 1.4 }] }
-  ]
+    {
+      "id": "hook1",
+      "scene": "hook",
+      "text": "Three men lived on this island.",
+      "pause": 0.7,
+      "lead": 1.4,
+      "sfx": [
+        {
+          "type": "thunder",
+          "at": -1.2
+        }
+      ]
+    },
+    {
+      "id": "hook2",
+      "scene": "hook",
+      "text": "When help finally arrived, all three were gone.",
+      "pause": 0.9
+    },
+    {
+      "id": "hook3",
+      "scene": "hook",
+      "text": "Two of them had taken their coats.",
+      "pause": 0.6
+    },
+    {
+      "id": "hook4",
+      "scene": "hook",
+      "text": "One of them... hadn't.",
+      "pause": 1.3,
+      "sfx": [
+        {
+          "type": "boom",
+          "at": 0.7
+        }
+      ]
+    },
+    {
+      "id": "hook5",
+      "scene": "hook",
+      "text": "Why would a man walk out into a winter storm, on the edge of the Atlantic... in his shirtsleeves?",
+      "pause": 1.6,
+      "sfx": [
+        {
+          "type": "thunder",
+          "at": 2.0
+        }
+      ]
+    },
+    {
+      "id": "title",
+      "scene": "title",
+      "text": "",
+      "hold": 8.5,
+      "sfx": [
+        {
+          "type": "hoot",
+          "at": 0.6
+        },
+        {
+          "type": "musicbox",
+          "at": 1.6
+        },
+        {
+          "type": "boom",
+          "at": 4.2
+        }
+      ]
+    },
+    {
+      "id": "map1",
+      "scene": "map",
+      "text": "December, nineteen hundred.",
+      "pause": 0.6
+    },
+    {
+      "id": "map2",
+      "scene": "map",
+      "text": "Twenty miles west of the Isle of Lewis, in Scotland's Outer Hebrides, a cluster of rocks rises out of the Atlantic. The Flannan Isles.",
+      "pause": 0.6
+    },
+    {
+      "id": "map3",
+      "scene": "map",
+      "text": "On the largest, Eilean Mòr, stood a brand new lighthouse. It had been shining for barely a year.",
+      "say": "On the largest, Ellan More, stood a brand new lighthouse. It had been shining for barely a year.",
+      "pause": 1.0
+    },
+    {
+      "id": "keep1",
+      "scene": "keepers",
+      "text": "Three keepers lived there, keeping the light alive through the long winter nights.",
+      "pause": 0.6
+    },
+    {
+      "id": "keep2",
+      "scene": "keepers",
+      "text": "James Ducat, the principal keeper.",
+      "pause": 0.4
+    },
+    {
+      "id": "keep3",
+      "scene": "keepers",
+      "text": "Thomas Marshall, his assistant.",
+      "pause": 0.4
+    },
+    {
+      "id": "keep4",
+      "scene": "keepers",
+      "text": "And Donald McArthur, a local man filling in for a keeper who was off sick.",
+      "pause": 1.1
+    },
+    {
+      "id": "dark1",
+      "scene": "dark",
+      "text": "On the night of December the fifteenth, a steamer called the Archtor passed the islands in heavy weather.",
+      "say": "On the night of December the fifteenth, a steamer called the Arktor passed the islands in heavy weather.",
+      "pause": 0.5
+    },
+    {
+      "id": "dark2",
+      "scene": "dark",
+      "text": "Her crew looked for the light...",
+      "pause": 0.7
+    },
+    {
+      "id": "dark3",
+      "scene": "dark",
+      "text": "...and saw only darkness.",
+      "pause": 1.4,
+      "sfx": [
+        {
+          "type": "boom",
+          "at": 0.9
+        }
+      ]
+    },
+    {
+      "id": "wait1",
+      "scene": "wait",
+      "text": "The Archtor reported it when she docked three days later. But the storms had closed in.",
+      "say": "The Arktor reported it when she docked three days later. But the storms had closed in.",
+      "pause": 0.5
+    },
+    {
+      "id": "wait2",
+      "scene": "wait",
+      "text": "The relief boat, the Hesperus, couldn't sail. Day after day, the sea refused to let anyone through.",
+      "pause": 0.5
+    },
+    {
+      "id": "wait3",
+      "scene": "wait",
+      "text": "She finally reached the island at noon on the twenty-sixth of December. Eleven days after the light went out.",
+      "pause": 1.1
+    },
+    {
+      "id": "arr1",
+      "scene": "arrival",
+      "text": "There was no flag on the flagstaff. No supply boxes waiting at the landing. No one came down to meet them.",
+      "pause": 0.6
+    },
+    {
+      "id": "arr2",
+      "scene": "arrival",
+      "text": "Captain Harvie sounded the horn. He fired a flare into the sky.",
+      "pause": 0.6,
+      "sfx": [
+        {
+          "type": "horn",
+          "at": 1.2
+        },
+        {
+          "type": "flare",
+          "at": 2.9
+        }
+      ]
+    },
+    {
+      "id": "arr3",
+      "scene": "arrival",
+      "text": "Nothing answered.",
+      "pause": 1.4
+    },
+    {
+      "id": "in1",
+      "scene": "inside",
+      "text": "Relief keeper Joseph Moore climbed the steps alone.",
+      "pause": 0.5
+    },
+    {
+      "id": "in2",
+      "scene": "inside",
+      "text": "The gate was shut. The door was shut.",
+      "pause": 0.5
+    },
+    {
+      "id": "in3",
+      "scene": "inside",
+      "text": "Inside, the fire was cold. The beds were empty.",
+      "pause": 0.5,
+      "sfx": [
+        {
+          "type": "ticks",
+          "at": 0.0,
+          "dur": 4.5
+        }
+      ]
+    },
+    {
+      "id": "in4",
+      "scene": "inside",
+      "text": "And the clock on the wall... had stopped.",
+      "pause": 1.5,
+      "sfx": [
+        {
+          "type": "ticks",
+          "at": 0.0,
+          "dur": 1.6
+        },
+        {
+          "type": "boom",
+          "at": 2.0
+        }
+      ]
+    },
+    {
+      "id": "clue1",
+      "scene": "clues",
+      "text": "Yet nothing was out of place. The lamp had been cleaned and refilled, ready for another night.",
+      "pause": 0.5
+    },
+    {
+      "id": "clue2",
+      "scene": "clues",
+      "text": "The kitchen things were all clean. As Moore put it, they must have left some time after dinner.",
+      "pause": 0.5
+    },
+    {
+      "id": "clue3",
+      "scene": "clues",
+      "text": "The last entries on the log slate were from the fifteenth of December. Whatever happened... happened that day.",
+      "pause": 1.1
+    },
+    {
+      "id": "coat1",
+      "scene": "coats",
+      "text": "Then there were the coats.",
+      "pause": 0.5
+    },
+    {
+      "id": "coat2",
+      "scene": "coats",
+      "text": "Two sets of oilskins were gone. Ducat and Marshall had dressed for the storm.",
+      "pause": 0.5
+    },
+    {
+      "id": "coat3",
+      "scene": "coats",
+      "text": "But Donald McArthur's oilskins were still there.",
+      "pause": 1.0,
+      "sfx": [
+        {
+          "type": "boom",
+          "at": 1.6
+        }
+      ]
+    },
+    {
+      "id": "coat4",
+      "scene": "coats",
+      "text": "Whatever pulled him outside... he didn't stop to put on his coat.",
+      "pause": 1.5,
+      "sfx": [
+        {
+          "type": "door",
+          "at": 2.2
+        }
+      ]
+    },
+    {
+      "id": "land1",
+      "scene": "landing",
+      "text": "Days later, Superintendent Robert Muirhead searched the island's west landing.",
+      "pause": 0.5
+    },
+    {
+      "id": "land2",
+      "scene": "landing",
+      "text": "Iron railings were bent and twisted. A rock weighing more than a ton had been torn loose.",
+      "pause": 0.5
+    },
+    {
+      "id": "land3",
+      "scene": "landing",
+      "text": "A box of ropes, wedged in a crevice thirty-three metres above the sea, had been smashed, its ropes scattered.",
+      "pause": 0.5
+    },
+    {
+      "id": "land4",
+      "scene": "landing",
+      "text": "Turf had been ripped away even higher, more than sixty metres up the cliff.",
+      "pause": 0.5
+    },
+    {
+      "id": "land5",
+      "scene": "landing",
+      "text": "Muirhead wrote that the damage was difficult to believe... unless actually seen.",
+      "pause": 1.3
+    },
+    {
+      "id": "myth1",
+      "scene": "myth",
+      "text": "Over the years, the story grew darker.",
+      "pause": 0.5
+    },
+    {
+      "id": "myth2",
+      "scene": "myth",
+      "text": "Writers described an uneaten meal and an overturned chair. A logbook full of strange storms, weeping men and prayers, ending with the words: God is over all.",
+      "pause": 0.7
+    },
+    {
+      "id": "myth3",
+      "scene": "myth",
+      "text": "None of it was real. The meal and the chair came from a poem. The log entries were invented, years later.",
+      "pause": 0.6,
+      "sfx": [
+        {
+          "type": "scratch",
+          "at": 0.3
+        },
+        {
+          "type": "scratch",
+          "at": 2.6
+        }
+      ]
+    },
+    {
+      "id": "myth4",
+      "scene": "myth",
+      "text": "The true record is quieter... and somehow, more haunting.",
+      "pause": 1.3
+    },
+    {
+      "id": "th1",
+      "scene": "theory",
+      "text": "So what happened?",
+      "pause": 0.7
+    },
+    {
+      "id": "th2",
+      "scene": "theory",
+      "text": "Muirhead believed that Ducat and Marshall went down to the west landing to secure that box of ropes.",
+      "pause": 0.5
+    },
+    {
+      "id": "th3",
+      "scene": "theory",
+      "text": "McArthur, still inside, may have seen something from the window. Something enormous, rolling in from the Atlantic.",
+      "pause": 0.5
+    },
+    {
+      "id": "th4",
+      "scene": "theory",
+      "text": "He ran out without his coat... perhaps to warn them.",
+      "pause": 0.6
+    },
+    {
+      "id": "th5",
+      "scene": "theory",
+      "text": "One enormous wave. And all three were gone.",
+      "pause": 1.8,
+      "sfx": [
+        {
+          "type": "wave",
+          "at": -0.4
+        }
+      ]
+    },
+    {
+      "id": "end1",
+      "scene": "ending",
+      "text": "Their bodies were never found.",
+      "pause": 1.2
+    },
+    {
+      "id": "end2",
+      "scene": "ending",
+      "text": "Today, the Flannan Isles light still shines. But since nineteen seventy-one, no keeper has lived there. It keeps its watch alone.",
+      "pause": 1.0
+    },
+    {
+      "id": "end3",
+      "scene": "ending",
+      "text": "So what do you think happened on Eilean Mòr? Tell us in the comments.",
+      "say": "So what do you think happened on Ellan More? Tell us in the comments.",
+      "pause": 1.2
+    },
+    {
+      "id": "out1",
+      "scene": "outro",
+      "text": "Some stories should never be forgotten. This is the House of Owls.",
+      "pause": 0.6,
+      "sfx": [
+        {
+          "type": "musicbox",
+          "at": -0.5
+        }
+      ]
+    },
+    {
+      "id": "out2",
+      "scene": "outro",
+      "text": "Keep watching. Keep learning. And one day... you'll be one of us.",
+      "pause": 0.5
+    },
+    {
+      "id": "out3",
+      "scene": "outro",
+      "text": "A member of the Owl Society.",
+      "pause": 3.5,
+      "sfx": [
+        {
+          "type": "hoot",
+          "at": 1.4
+        }
+      ]
+    }
+  ],
+  "music": {
+    "hook": {
+      "chord": [
+        "D2",
+        "A2",
+        "F3",
+        "A3"
+      ],
+      "pad": 0.8,
+      "piano": 0.0,
+      "pulse": 0.6
+    },
+    "title": {
+      "chord": [
+        "D2",
+        "A2",
+        "D3",
+        "F3"
+      ],
+      "pad": 0.6,
+      "piano": 0.0,
+      "pulse": 0.0
+    },
+    "map": {
+      "chord": [
+        "F2",
+        "C3",
+        "F3",
+        "A3"
+      ],
+      "pad": 0.55,
+      "piano": 0.7,
+      "pulse": 0.0
+    },
+    "keepers": {
+      "chord": [
+        "Bb1",
+        "F2",
+        "D3",
+        "F3"
+      ],
+      "pad": 0.6,
+      "piano": 0.8,
+      "pulse": 0.0
+    },
+    "dark": {
+      "chord": [
+        "D2",
+        "A2",
+        "D3",
+        "Eb3"
+      ],
+      "pad": 0.85,
+      "piano": 0.0,
+      "pulse": 0.7
+    },
+    "wait": {
+      "chord": [
+        "G1",
+        "D2",
+        "Bb2",
+        "D3"
+      ],
+      "pad": 0.7,
+      "piano": 0.3,
+      "pulse": 0.4
+    },
+    "arrival": {
+      "chord": [
+        "D2",
+        "A2",
+        "C3",
+        "F3"
+      ],
+      "pad": 0.7,
+      "piano": 0.0,
+      "pulse": 0.3
+    },
+    "inside": {
+      "chord": [
+        "A1",
+        "E2",
+        "C3",
+        "E3"
+      ],
+      "pad": 0.75,
+      "piano": 0.4,
+      "pulse": 0.5
+    },
+    "clues": {
+      "chord": [
+        "D2",
+        "A2",
+        "F3",
+        "C4"
+      ],
+      "pad": 0.55,
+      "piano": 0.7,
+      "pulse": 0.0
+    },
+    "coats": {
+      "chord": [
+        "Bb1",
+        "F2",
+        "Db3",
+        "F3"
+      ],
+      "pad": 0.8,
+      "piano": 0.3,
+      "pulse": 0.5
+    },
+    "landing": {
+      "chord": [
+        "G1",
+        "D2",
+        "Bb2",
+        "F3"
+      ],
+      "pad": 0.6,
+      "piano": 0.4,
+      "pulse": 0.2
+    },
+    "myth": {
+      "chord": [
+        "F2",
+        "C3",
+        "Ab3",
+        "C4"
+      ],
+      "pad": 0.55,
+      "piano": 0.6,
+      "pulse": 0.0
+    },
+    "theory": {
+      "chord": [
+        "D2",
+        "A2",
+        "D3",
+        "Eb3"
+      ],
+      "pad": 0.95,
+      "piano": 0.0,
+      "pulse": 1.0
+    },
+    "ending": {
+      "chord": [
+        "Bb1",
+        "F2",
+        "D3",
+        "A3"
+      ],
+      "pad": 0.6,
+      "piano": 0.9,
+      "pulse": 0.0
+    },
+    "outro": {
+      "chord": [
+        "D2",
+        "A2",
+        "F3",
+        "A3"
+      ],
+      "pad": 0.5,
+      "piano": 0.6,
+      "pulse": 0.0
+    }
+  }
 }

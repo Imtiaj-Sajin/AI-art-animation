@@ -465,10 +465,12 @@ SCENES.dark = {
         if (b.length >= 2 && a.length < b.length + 2) HD.ink(c, [a[a.length - 1], b[b.length - 1]], 1000 + i, 3, 0.3, 0.9, '#e9dfc6');
       }
     }
-    HD.text(c, '?', 1490, 290, { size: 110, color: C.orange, p: prog(t, k.at('dark2') + 1.2, 0.4), id: 1020, weight: 700 });
+    HD.text(c, '?', 1475, 330, { size: 110, color: C.orange, p: prog(t, k.at('dark2') + 1.2, 0.4), id: 1020, weight: 700 });
     HD.text(c, '15 December 1900', 150, 140, { size: 64, color: '#e9dfc6', p: prog(t, k.at('dark1') + 0.4, 1.2), id: 1021, weight: 700 });
     HD.text(c, 'the steamer Archtor', 180, 200, { size: 44, color: '#c8bfa6', p: prog(t, k.at('dark1') + 3.6, 1.0), id: 1022 });
-    HD.text(c, 'the light is out.', 1430, 160, { size: 56, color: '#e9dfc6', p: prog(t, k.at('dark3') + 0.8, 1.0), align: 'center', id: 1023, weight: 700 });
+    c.save(); c.setTransform(1, 0, 0, 1, 0, 0);   // screen space: the camera push-in must not crop it
+    HD.text(c, 'the light is out.', 960, 120, { size: 72, color: '#e9dfc6', p: prog(t, k.at('dark3') + 0.8, 1.0), align: 'center', id: 1023, weight: 700 });
+    c.restore();
   },
 };
 

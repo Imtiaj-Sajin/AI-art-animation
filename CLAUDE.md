@@ -16,6 +16,13 @@ mysterious and forgotten *true* stories. Videos are hand-drawn-style animations 
 - **Everything lives in this repo** (code, skills, research, context) so work can continue from any
   machine. Write new knowledge down here, in `docs/`, or in the episode folder, not just in chat.
 
+## Read next
+
+- `docs/context/`: session logs with everything done, decided and fixed so far (newest last). **Add a
+  new log at the end of every working session** (what the user asked, what you produced, decisions,
+  problems and fixes, open items), so the next session starts with full context.
+- `docs/voice-upgrade.md`: how to upgrade the narrator on a GPU PC or with a paid service.
+
 ## The mascot
 
 Round white owl, big round black glasses, the right brow raised (curious and skeptical), orange beak and
@@ -24,11 +31,20 @@ reference image is the channel avatar. Keep it consistent across episodes.
 
 ## How things fit together
 
-`script.json` → `tools/tts.py` (Kokoro voice `bm_george`, en-gb, speed 0.9) → `build/timeline.json` with
+`script.json` → `tools/tts.py` (Kokoro voice `am_michael`, en-us, speed 0.92: the user's pick) → `build/timeline.json` with
 the start and end of every line and scene → scenes in `scenes-*.js` animate against `k.at('lineId')` →
 `tools/sound.py` mixes ambience and effects using the same timeline → `tools/render.mjs` renders frames
 and muxes `build/mix.wav`. Changing the script means re-running voice, then sound; the animation follows
 automatically because it is keyed to line ids, not absolute seconds.
+
+## Sound (user feedback, 2026-10-28)
+
+- The voice must sound like a **studio podcast**: dry, close, no room echo. Never add reverb to the narration;
+  it goes through `tools/voicefx.py` `studio()` (EQ, de-ess, compression).
+- The music must **change with the story**, not sit as one static drone. Each scene has its own chord, piano and
+  heartbeat-pulse levels in `script.json` `"music"`. Keep music about 13–15 dB under the voice.
+- The user rejected `bm_george`. To audition voices: `python -I tools/voice_samples.py` → `out/voice-samples/index.html`.
+  Premium upgrade path if wanted later: ElevenLabs (API key in env var `ELEVENLABS_API_KEY`) or a human narrator.
 
 ## Rules
 

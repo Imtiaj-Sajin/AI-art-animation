@@ -33,7 +33,9 @@ Line fields: `id`, `scene`, `text` (on-screen subtitle), optional `say` (pronunc
 `pause` (seconds after the line), `lead` (silence before), `hold` (silent line, e.g. the title card),
 `sfx` (list of `{type, at, dur?}` with `at` relative to the line start; types: boom, thunder, hoot,
 musicbox, horn, flare, ticks, door, scratch, wave). `soundscape` sets per-scene ambience levels
-(`sea`, `wind`, `rain`, `drone`, `muffle` = heard from indoors).
+(`sea`, `wind`, `rain`, `muffle` = heard from indoors). `music` sets the per-scene score:
+`{"chord": ["D2","A2","F3","A3"], "pad": 0..1, "piano": 0..1, "pulse": 0..1}`. Use a new chord when the
+story turns, piano on reflective beats, and the heartbeat pulse on tense ones.
 
 Writing tips: short sentences, ellipses for dramatic pauses ("One of them... hadn't."), and
 specific numbers over adjectives.
@@ -44,8 +46,9 @@ specific numbers over adjectives.
 npm run voice -- episodes/NN-slug
 ```
 
-Listen to `build/narration.wav`. Fix mispronunciations with `say`, then re-run. Voices available:
-`bm_george` (default narrator), `bm_lewis`, `bm_daniel`, `bm_fable`, `bf_emma`, `bf_isabella`, ...
+Listen to `build/narration.wav`. Fix mispronunciations with `say`, then re-run. The channel narrator is
+`am_michael`. To audition all voices with the studio chain: `python -I tools/voice_samples.py`, then open
+`out/voice-samples/index.html`.
 
 ## 4. Design and build scenes
 

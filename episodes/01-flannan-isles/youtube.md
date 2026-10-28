@@ -1,6 +1,6 @@
 # YouTube publish kit: Episode 01
 
-**File:** `out/01-flannan-isles.mp4` (1920×1080, 24 fps, 5:13) · **Subtitles:** `build/captions.srt`
+**File:** `out/01-flannan-isles.mp4` (1920×1080, 24 fps, 4:58) · **Subtitles:** `build/captions.srt`
 **Thumbnail idea:** the single yellow oilskin on its peg in lantern light, two empty pegs circled, text:
 **"WHY ONE COAT?"**
 
@@ -24,20 +24,20 @@ Keep watching. Keep learning. Welcome to the Owl Society. 🦉
 
 CHAPTERS
 0:00 Cold open
-0:23 House of Owls
-0:32 Twenty miles west
-0:54 The three keepers
-1:13 The light goes out
-1:26 Eleven days
-1:50 Nothing answered
-2:07 Inside the lighthouse
-2:23 The clues
-2:45 The coats
-3:04 The west landing
-3:37 The myths
-4:07 What really happened?
-4:35 The light still shines
-4:54 The Owl Society
+0:21 House of Owls
+0:31 Twenty miles west
+0:52 The three keepers
+1:10 The light goes out
+1:22 Eleven days
+1:44 Nothing answered
+2:00 Inside the lighthouse
+2:15 The clues
+2:36 The coats
+2:54 The west landing
+3:26 The myths
+3:55 What really happened?
+4:21 The light still shines
+4:40 The Owl Society
 
 SOURCES
 • Northern Lighthouse Board records via Wikipedia, "Flannan Isles Lighthouse": https://en.wikipedia.org/wiki/Flannan_Isles_Lighthouse

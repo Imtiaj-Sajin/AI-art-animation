@@ -14,6 +14,9 @@ import numpy as np
 import soundfile as sf
 from scipy import signal
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from voicefx import studio  # noqa: E402
+
 SR = 48000
 CR = 100  # control rate for automation curves
 rng = np.random.default_rng(7)
@@ -251,14 +254,65 @@ def ambience(timeline, soundscape, n):
         muffle = automation(timeline, soundscape, "muffle", n)
         weather = weather * (1 - muffle) + lp(weather, 350) * muffle * 1.3   # heard from indoors
         out[:, ch] = weather
-    # drone pad in D minor with slow swells
-    drone = np.zeros(n)
-    for f, a in [(73.42, 1.0), (110.0, 0.7), (146.83, 0.45), (174.61, 0.35), (220.0, 0.2)]:
-        for det in (-0.25, 0.25):
-            drone += a * np.sin(2 * np.pi * (f + det) * t + rng.random() * 6)
-    drone = lp(drone, 600) * (0.6 + 0.4 * smooth_random(n, 0.08)) * automation(timeline, soundscape, "drone", n) * 0.05
-    out += drone[:, None]
     return out
+
+
+# ---------- score: a different chord, piano and pulse for every scene ----------
+def pad_voice(freq, n, ch):
+    """Warm string-like pad note: detuned saws through a lowpass, slow chorus."""
+    t = np.arange(n) / SR
+    out = np.zeros(n)
+    for det in (-0.12, 0.0, 0.13):
+        f = freq * (1 + det / 100 * (1 + 0.3 * ch)) * (1 + 0.0015 * np.sin(2 * np.pi * 0.2 * t + det * 9))
+        ph = np.cumsum(f) / SR
+        out += 2 * (ph % 1) - 1
+    return lp(out, min(1400, freq * 5), 2) / 3
+
+
+def score(timeline, music, n):
+    out = np.zeros((n, 2))
+    fade = 2.2
+    for i, sc in enumerate(timeline["scenes"]):
+        cue = music.get(sc["id"])
+        if not cue:
+            continue
+        a = max(0.0, sc["start"] - fade / 2)
+        b = min(n / SR, sc["end"] + fade / 2)
+        s0, s1 = int(a * SR), int(b * SR)
+        m = s1 - s0
+        tt = np.arange(m) / SR
+        env = np.minimum(1, tt / fade) * np.minimum(1, (m / SR - tt) / fade)
+        swell = 0.75 + 0.25 * np.sin(2 * np.pi * tt / 9 + i)
+        for ch in range(2):
+            pad = sum(pad_voice(note_hz(nm), m, ch) * (1.0 if k == 0 else 0.6) for k, nm in enumerate(cue["chord"]))
+            out[s0:s1, ch] += pad * env * swell * cue.get("pad", 0.5) * 0.06
+        # piano: chord tones picked out slowly, an octave up, panned gently
+        if cue.get("piano", 0) > 0:
+            notes = cue["chord"][1:] + [cue["chord"][2]]
+            r = np.random.default_rng(i + 11)
+            at, k = 1.5, 0
+            while at < m / SR - 2.5:
+                nm = notes[k % len(notes)]
+                f = note_hz(nm) * 2
+                p = pluck(f, 3.0) * 0.5 + pluck(f * 2, 3.0) * 0.08
+                st = s0 + int(at * SR)
+                e = min(n, st + len(p))
+                pan = 0.5 + 0.25 * np.sin(k * 1.7)
+                out[st:e, 0] += p[: e - st] * cue["piano"] * 0.09 * (1 - pan) * 2
+                out[st:e, 1] += p[: e - st] * cue["piano"] * 0.09 * pan * 2
+                at += 2.6 + r.random() * 1.6
+                k += 1
+        # heartbeat pulse for tension: lub-dub at ~58 bpm
+        if cue.get("pulse", 0) > 0:
+            beat = np.zeros(m)
+            hb = sfx_boom(0.5)[: int(0.5 * SR)] * np.exp(-np.arange(int(0.5 * SR)) / SR * 9)
+            for st in np.arange(0.6, m / SR - 0.6, 60 / 58):
+                for off, g in ((0, 1.0), (0.24, 0.6)):
+                    j = int((st + off) * SR)
+                    e = min(m, j + len(hb))
+                    beat[j:e] += hb[: e - j] * g
+            out[s0:s1] += (lp(beat, 140) * env * cue["pulse"] * 0.35)[:, None]
+    return reverb(out[:, 0], 0.35)[:, None] * [1, 0] + reverb(out[:, 1], 0.35)[:, None] * [0, 1]
 
 
 def main(ep_dir):
@@ -270,10 +324,10 @@ def main(ep_dir):
     narr, nsr = sf.read(ep / "build" / "narration.wav", dtype="float32")
     narr = signal.resample_poly(narr, SR, nsr)[:n]
     narr = np.pad(narr, (0, n - len(narr)))
-    narr = narr / (np.abs(narr).max() + 1e-9) * 0.85
-    narr = reverb(narr, 0.06)
+    narr = studio(narr, SR) * 0.9          # dry, close, podcast-style: no reverb on the voice
 
     amb = ambience(timeline, script.get("soundscape", {}), n) * 1.6
+    mus = score(timeline, script.get("music", {}), n)
 
     sfx = np.zeros(n)
     starts = {ln["id"]: ln["start"] for ln in timeline["lines"]}
@@ -292,16 +346,17 @@ def main(ep_dir):
     csum = np.cumsum(np.pad(np.abs(narr), (win // 2, win - win // 2)))
     env = (csum[win:] - csum[:-win])[:n] / win
     env = np.clip(env / (env.max() + 1e-9) * 3, 0, 1)
-    amb *= (1 - 0.5 * env)[:, None]
+    amb *= (1 - 0.55 * env)[:, None]
+    mus *= 0.42 * (1 - 0.35 * env)[:, None]   # sits ~14 dB under the voice, swells in the gaps
 
-    mix = amb + sfx[:, None] * 0.8 + narr[:, None]
+    mix = amb + mus + sfx[:, None] * 0.8 + narr[:, None]
     mix = np.tanh(mix * 1.1) / np.tanh(1.1)
     mix = mix / (np.abs(mix).max() + 1e-9) * 0.93
     sf.write(ep / "build" / "mix.wav", mix.astype(np.float32), SR, subtype="PCM_16")
 
     rms = lambda x: 20 * np.log10(np.sqrt(np.mean(np.square(x))) + 1e-12)
     speech = env > 0.3
-    print(f"narration RMS {rms(narr[speech]):.1f} dB | ambience RMS under speech {rms(amb[speech]):.1f} dB | ambience overall {rms(amb):.1f} dB")
+    print(f"narration RMS {rms(narr[speech]):.1f} dB | ambience under speech {rms(amb[speech]):.1f} dB | music under speech {rms(mus[speech]):.1f} dB | music overall {rms(mus):.1f} dB")
     print("wrote", ep / "build" / "mix.wav")
 
 

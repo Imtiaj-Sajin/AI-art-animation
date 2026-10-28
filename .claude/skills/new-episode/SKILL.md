@@ -19,7 +19,8 @@ First read `CLAUDE.md`, `docs/workflow.md` and `docs/style-guide.md`. Episode 01
    - The cold-open hook comes first: the strangest concrete detail as a question, under 25 s.
    - The outro is always the Owl Society ending (never "subscribe"), ending on
      "A member of the Owl Society."
-   - Add `sfx` cues on reveals and a `soundscape` per scene.
+   - Add `sfx` cues on reveals, a `soundscape` per scene, and a `music` cue per scene (chord, pad, piano, pulse)
+     so the score moves with the story. Voice: `am_michael` (en-us, 0.92).
 4. **Voice:** `npm run voice -- episodes/NN-slug`. Check durations; fix pronunciations with `say`.
 5. **Scenes:** copy `index.html` from episode 01, then write `scenes-1.js` / `scenes-2.js`.
    - Reuse `EP` helpers from episode 01's `scenes-1.js` (camAt, flashAt, bolt, rock, window, coat)
@@ -33,7 +34,8 @@ First read `CLAUDE.md`, `docs/workflow.md` and `docs/style-guide.md`. Episode 01
 8. **Render:** `npm run render -- episodes/NN-slug` (runs in the background; ~10–15 min for 5 min).
 9. **Publish kit:** write `youtube.md` (title options, description with sources and chapters from
    `build/timeline.json`, tags) and a thumbnail still. Update `docs/episode-ideas.md` to ✅.
-10. Commit everything except git-ignored build outputs.
+10. **Write a session log** in `docs/context/YYYY-MM-DD-<topic>.md` (user requests, decisions, problems
+    and fixes, open items). Don't commit or push: the user writes their own commit messages and pushes.
 
 ## Gotchas
 
