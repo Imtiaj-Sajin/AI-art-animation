@@ -1,1 +1,20 @@
-{"name":"art-animation","private":true,"type":"module","dependencies":{"ffmpeg-static":"^5.3.0","puppeteer-core":"^25.16.0"},"allowScripts":{"ffmpeg-static@5.3.0":true}}
+{
+  "name": "house-of-owls",
+  "private": true,
+  "type": "module",
+  "description": "Hand-drawn, code-generated story videos for the House of Owls YouTube channel",
+  "scripts": {
+    "setup": "node tools/setup.mjs",
+    "voice": "python -I tools/tts.py",
+    "sound": "python -I tools/sound.py",
+    "render": "node tools/render.mjs",
+    "stills": "node tools/render.mjs --stills"
+  },
+  "dependencies": {
+    "ffmpeg-static": "^5.3.0",
+    "puppeteer-core": "^25.16.0"
+  },
+  "allowScripts": {
+    "ffmpeg-static@5.3.0": true
+  }
+}

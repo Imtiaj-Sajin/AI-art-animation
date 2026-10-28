@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Flannan Isles · House of Owls</title>
+<link rel="stylesheet" href="../../lib/fonts/fonts.css">
+<style>
+  html, body { margin: 0; height: 100%; background: #111017; color: #e9e2d4; font-family: system-ui, sans-serif; }
+  body { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .stage { width: min(96vw, calc((100vh - 110px) * 16 / 9)); position: relative; }
+  canvas { display: block; width: 100%; aspect-ratio: 16 / 9; background: #000; border-radius: 4px; box-shadow: 0 12px 40px rgba(0,0,0,.6); }
+  .sub { position: absolute; left: 0; right: 0; bottom: 4%; text-align: center; font: 600 clamp(14px, 1.6vw, 26px) system-ui, sans-serif; text-shadow: 0 2px 6px #000, 0 0 2px #000; pointer-events: none; padding: 0 8%; }
+  .bar { display: flex; align-items: center; gap: 10px; margin-top: 12px; }
+  button, select { background: #f3ecdd; color: #1b2140; border: 0; border-radius: 6px; padding: 7px 12px; font: 600 13px system-ui, sans-serif; cursor: pointer; }
+  input[type=range] { flex: 1; accent-color: #f47a3a; }
+  #time { font-variant-numeric: tabular-nums; min-width: 110px; text-align: right; opacity: .8; font-size: 13px; }
+  label { font-size: 13px; opacity: .85; display: flex; gap: 4px; align-items: center; }
+  body.export .bar, body.export .sub { display: none; }
+</style>
+</head>
+<body>
+<div class="stage">
+  <canvas id="c"></canvas>
+  <div class="sub" id="sub"></div>
+  <div class="bar">
+    <button id="play">Play</button>
+    <select id="jump"></select>
+    <input id="scrub" type="range" min="0" step="0.01" value="0">
+    <span id="time"></span>
+    <label><input type="checkbox" id="subs" checked> subtitles</label>
+  </div>
+</div>
+<audio id="audio" src="build/mix.wav" preload="auto"></audio>
+<script src="build/timeline.js"></script>
+<script src="../../lib/hand.js"></script>
+<script src="../../lib/owl.js"></script>
+<script src="scenes-1.js"></script>
+<script src="scenes-2.js"></script>
+<script>
+'use strict';
+const { W, H, clamp, prog } = HD;
+const TL = window.TIMELINE;
+const DURATION = TL.duration, FPS = 24;
+const cvs = document.getElementById('c');
+cvs.width = W; cvs.height = H;
+const out = cvs.getContext('2d');
+const stage = new HD.Stage();
+const bufA = HD.canvas(), bufB = HD.canvas(), mask = HD.canvas(), tmp = HD.canvas();
+const lineStart = {}, lineEnd = {};
+for (const ln of TL.lines) { lineStart[ln.id] = ln.start; lineEnd[ln.id] = ln.end; }
+
+// helpers handed to every scene
+function kit(sc, t) {
+  return {
+    t, lt: t - sc.start, start: sc.start, end: sc.end, dur: sc.end - sc.start,
+    at: id => lineStart[id], endOf: id => lineEnd[id],
+    p: (id, off = 0, dur = 1) => prog(t, lineStart[id] + off, dur),          // progress from a line's start
+    pe: (id, off = 0, dur = 1) => prog(t, lineEnd[id] + off, dur),           // progress from a line's end
+    sp: (off = 0, dur = 1) => prog(t, sc.start + off, dur),                  // progress from scene start
+    u: () => clamp((t - sc.start) / (sc.end - sc.start)),                    // 0..1 through the scene
+  };
+}
+function drawScene(i, t, target) {
+  const sc = TL.scenes[i], def = SCENES[sc.id];
+  const L = stage.begin(t, t - sc.start);
+  if (def) def.draw(L, kit(sc, t));
+  stage.compose(target.getContext('2d'), L);
+}
+const bleedWashes = Array.from({ length: 9 }, (_, i) => HD.makeWash(400 + i, 11, 1));
+function bleedMask(p, seed) {
+  const m = mask.getContext('2d');
+  m.setTransform(1, 0, 0, 1, 0, 0); m.clearRect(0, 0, W, H);
+  m.fillStyle = '#fff';
+  for (let i = 0; i < 9; i++) {
+    const x = HD.h2(seed, i) * W, y = HD.h2(seed, i + 20) * H;
+    const r = Math.max(0, p * 1500 * (0.55 + HD.h2(seed, i + 40) * 0.6) - HD.h2(seed, i + 60) * 300);
+    if (r <= 0) continue;
+    m.save(); m.translate(x, y); m.rotate(i); m.scale(r, r); m.fill(bleedWashes[i][0][0]); m.restore();
+  }
+}
+function render(t) {
+  t = clamp(t, 0, DURATION - 1e-3);
+  let i = TL.scenes.findIndex(s => t < s.end);
+  if (i < 0) i = TL.scenes.length - 1;
+  const sc = TL.scenes[i], def = SCENES[sc.id] || {};
+  const enter = def.enter || { type: 'bleed', dur: 1.2 };
+  const p = i > 0 ? prog(t, sc.start, enter.dur) : 1;
+  if (p >= 1 || enter.type === 'cut') { drawScene(i, t, cvs); return; }
+  drawScene(i - 1, t, bufA);
+  drawScene(i, t, bufB);
+  out.setTransform(1, 0, 0, 1, 0, 0); out.globalCompositeOperation = 'source-over'; out.globalAlpha = 1;
+  out.drawImage(bufA, 0, 0);
+  if (enter.type === 'fade') {
+    out.globalAlpha = HD.smooth(p); out.drawImage(bufB, 0, 0); out.globalAlpha = 1;
+  } else {
+    bleedMask(HD.easeInOut(p), i * 13);
+    const tc = tmp.getContext('2d');
+    tc.globalCompositeOperation = 'source-over'; tc.clearRect(0, 0, W, H); tc.drawImage(bufB, 0, 0);
+    tc.globalCompositeOperation = 'destination-in'; tc.drawImage(mask, 0, 0);
+    tc.globalCompositeOperation = 'source-over';
+    out.drawImage(tmp, 0, 0);
+  }
+}
+
+// ---------- export hooks ----------
+const params = new URLSearchParams(location.search);
+const EXPORT = params.has('export');
+if (EXPORT) document.body.classList.add('export');
+window.ANIM = {
+  duration: DURATION, fps: FPS, audio: 'build/mix.wav',
+  frame(t) { render(t); return cvs.toDataURL('image/png').split(',')[1]; },
+  thumbnail() {
+    const L = stage.begin(3, 3);
+    SCENES.thumbnail.draw(L, { t: 3, lt: 3 });
+    stage.compose(out, L);
+    return cvs.toDataURL('image/png').split(',')[1];
+  },
+};
+
+// ---------- preview player ----------
+const audio = document.getElementById('audio');
+const playBtn = document.getElementById('play'), scrub = document.getElementById('scrub'), timeEl = document.getElementById('time');
+const sub = document.getElementById('sub'), subs = document.getElementById('subs'), jump = document.getElementById('jump');
+scrub.max = DURATION;
+for (const s of TL.scenes) jump.add(new Option(`${s.id} (${s.start.toFixed(0)}s)`, s.start));
+let playing = false, cur = +(params.get('t') || 0), clock = 0, clockAt = 0;
+const fmt = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+function now() { return playing ? (audio.duration && !audio.paused ? audio.currentTime : clock + (performance.now() - clockAt) / 1000) : cur; }
+function setTime(t) { cur = clamp(t, 0, DURATION); audio.currentTime = cur; clock = cur; clockAt = performance.now(); paint(); }
+function paint() {
+  render(cur);
+  scrub.value = cur; timeEl.textContent = `${fmt(cur)} / ${fmt(DURATION)}`;
+  const ln = TL.lines.find(l => l.text && cur >= l.start && cur <= l.end + 0.3);
+  sub.textContent = subs.checked && ln ? ln.text : '';
+}
+playBtn.onclick = () => {
+  playing = !playing; playBtn.textContent = playing ? 'Pause' : 'Play';
+  clock = cur; clockAt = performance.now();
+  if (playing) { audio.currentTime = cur; audio.play().catch(() => {}); } else audio.pause();
+};
+scrub.oninput = () => setTime(+scrub.value);
+jump.onchange = () => setTime(+jump.value);
+function loop() {
+  if (playing) { cur = now(); if (cur >= DURATION) { playing = false; playBtn.textContent = 'Play'; } paint(); }
+  requestAnimationFrame(loop);
+}
+document.fonts.ready.then(() => Promise.all(['600 40px Caveat', '400 40px "IM Fell English"', 'italic 400 40px "IM Fell English"', '700 40px Fredoka'].map(f => document.fonts.load(f)))).then(() => {
+  paint();
+  window.animationReady = true;
+  if (!EXPORT) requestAnimationFrame(loop);
+});
+</script>
+</body>
+</html>
