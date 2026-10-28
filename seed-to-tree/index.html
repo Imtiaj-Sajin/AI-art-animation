@@ -1,0 +1,777 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>One Tiny Seed</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&display=block" rel="stylesheet">
+<style>
+  html, body { margin: 0; height: 100%; background: #1d1b18; color: #e9e2d4; font-family: system-ui, sans-serif; }
+  body { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; }
+  .stage { width: min(96vw, calc((100vh - 80px) * 16 / 9)); }
+  canvas { display: block; width: 100%; aspect-ratio: 16 / 9; background: #f3ecdd; box-shadow: 0 12px 40px rgba(0, 0, 0, .55); border-radius: 4px; }
+  .bar { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
+  button { background: #f3ecdd; color: #25306b; border: 0; border-radius: 6px; padding: 7px 14px; font: 600 14px system-ui, sans-serif; cursor: pointer; }
+  input[type=range] { flex: 1; accent-color: #e8742a; }
+  #time { font-variant-numeric: tabular-nums; min-width: 92px; text-align: right; opacity: .8; font-size: 14px; }
+  body.export .bar { display: none; }
+</style>
+</head>
+<body>
+<div class="stage">
+  <canvas id="c"></canvas>
+  <div class="bar">
+    <button id="play">Pause</button>
+    <input id="scrub" type="range" min="0" max="16" step="0.01" value="0">
+    <span id="time">0.00 / 16.00</span>
+  </div>
+</div>
+<script>
+'use strict';
+const W = 1920, H = 1080, DURATION = 16, FPS = 24;
+const INK = '#25306b';
+const GROUND_Y = 860, TREE_X = 960;
+const FONT = '"Caveat", "Segoe Print", cursive';
+
+// ---------- math ----------
+const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+const lerp = (a, b, t) => a + (b - a) * t;
+const smooth = t => t * t * (3 - 2 * t);
+const easeOut = t => 1 - Math.pow(1 - t, 3);
+const easeInOut = t => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+const easeOutBack = t => { const c1 = 1.70158, c3 = c1 + 1; return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2); };
+const prog = (t, start, dur) => clamp((t - start) / dur);
+
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+function hashInt(n) {
+  n = Math.imul(n ^ (n >>> 16), 0x7feb352d);
+  n = Math.imul(n ^ (n >>> 15), 0x846ca68b);
+  n ^= n >>> 16;
+  return (n >>> 0) / 4294967296;
+}
+const h2 = (a, b) => hashInt((Math.imul(a | 0, 374761393) + Math.imul(b | 0, 668265263)) | 0);
+function noise1(x, seed) {
+  const i = Math.floor(x), f = x - i;
+  return lerp(h2(i, seed), h2(i + 1, seed), smooth(f)) * 2 - 1;
+}
+const gauss = r => (r() + r() + r() - 1.5) * 1.15;
+const pick = (r, arr) => arr[(r() * arr.length) | 0];
+
+// "Line boil": hand-drawn lines are redrawn 8 times a second with fresh wobble.
+let BOIL = 0;
+const jit = (id, k) => h2(id * 31 + k, BOIL * 977 + 13) * 2 - 1;
+
+// ---------- geometry ----------
+function quadPts(p0, c, p1, n = 10) {
+  const out = [];
+  for (let i = 0; i <= n; i++) {
+    const u = i / n, iu = 1 - u;
+    out.push([iu * iu * p0[0] + 2 * iu * u * c[0] + u * u * p1[0], iu * iu * p0[1] + 2 * iu * u * c[1] + u * u * p1[1]]);
+  }
+  return out;
+}
+function ellipsePts(cx, cy, rx, ry, n = 36, rot = 0) {
+  const out = [], cr = Math.cos(rot), sr = Math.sin(rot);
+  for (let i = 0; i < n; i++) {
+    const a = i / n * Math.PI * 2, x = Math.cos(a) * rx, y = Math.sin(a) * ry;
+    out.push([cx + x * cr - y * sr, cy + x * sr + y * cr]);
+  }
+  return out;
+}
+const closed = pts => pts.concat([pts[0], pts[1]]);
+function xform(pts, x, y, rot = 0, s = 1) {
+  const cr = Math.cos(rot) * s, sr = Math.sin(rot) * s;
+  return pts.map(([px, py]) => [x + px * cr - py * sr, y + px * sr + py * cr]);
+}
+function resample(pts, step = 6) {
+  const out = [pts[0]];
+  for (let i = 1; i < pts.length; i++) {
+    const a = pts[i - 1], b = pts[i];
+    const n = Math.max(1, Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1]) / step));
+    for (let k = 1; k <= n; k++) out.push([a[0] + (b[0] - a[0]) * k / n, a[1] + (b[1] - a[1]) * k / n]);
+  }
+  return out;
+}
+function wobble(pts, amp, id, freq = 0.025) {
+  const out = new Array(pts.length), seed = id * 7919 + BOIL * 104729;
+  const sx = jit(id, 1) * amp * 0.6, sy = jit(id, 2) * amp * 0.6;
+  let s = 0;
+  for (let i = 0; i < pts.length; i++) {
+    const p = pts[i];
+    if (i > 0) s += Math.hypot(p[0] - pts[i - 1][0], p[1] - pts[i - 1][1]);
+    const a = pts[Math.max(0, i - 1)], b = pts[Math.min(pts.length - 1, i + 1)];
+    const nx = -(b[1] - a[1]), ny = b[0] - a[0], nl = Math.hypot(nx, ny) || 1;
+    const o = noise1(s * freq, seed) * amp;
+    out[i] = [p[0] + nx / nl * o + sx, p[1] + ny / nl * o + sy];
+  }
+  return out;
+}
+function tracePath(c, pts, close = false) {
+  c.beginPath();
+  c.moveTo(pts[0][0], pts[0][1]);
+  for (let i = 1; i < pts.length; i++) c.lineTo(pts[i][0], pts[i][1]);
+  if (close) c.closePath();
+}
+
+// ---------- drawing primitives ----------
+// Ink: a confident stroke plus a lighter, looser second pass, like a re-traced pen line.
+function ink(c, pts, id, w = 2.4, amp = 1.6, alpha = 1, color = INK) {
+  if (pts.length < 2) return;
+  pts = resample(pts, 6);
+  c.strokeStyle = color; c.lineCap = 'round'; c.lineJoin = 'round';
+  c.globalAlpha = 0.92 * alpha; c.lineWidth = w;
+  tracePath(c, wobble(pts, amp, id)); c.stroke();
+  c.globalAlpha = 0.38 * alpha; c.lineWidth = w * 0.55;
+  tracePath(c, wobble(pts, amp * 1.7, id + 5003)); c.stroke();
+  c.globalAlpha = 1;
+}
+// Crayon: a loose fill plus pencil hatching clipped to the shape. Paper grain is erased out later.
+function crayon(c, pts, color, id, { alpha = 0.8, hatch = 0.45, angle = -0.9, spacing = 5, dark = null } = {}) {
+  const wp = wobble(resample(closed(pts), 6), 1.3, id + 77);
+  tracePath(c, wp, true);
+  c.globalAlpha = alpha; c.fillStyle = color; c.fill();
+  c.save(); c.clip();
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  for (const [x, y] of wp) { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); }
+  const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2, R = Math.hypot(x1 - x0, y1 - y0) / 2 + 4;
+  const a = angle + jit(id, 8) * 0.06, dx = Math.cos(a), dy = Math.sin(a), px = -dy, py = dx;
+  c.beginPath();
+  let k = 0;
+  for (let d = -R + (jit(id, 9) + 1) * spacing * 0.5; d < R; d += spacing, k++) {
+    const ox = cx + px * d, oy = cy + py * d, wv = h2(id + k, 3) * 2 - 1;
+    c.moveTo(ox - dx * R, oy - dy * R);
+    c.lineTo(ox + px * wv * 1.5, oy + py * wv * 1.5);
+    c.lineTo(ox + dx * R, oy + dy * R);
+  }
+  c.strokeStyle = dark || color; c.globalAlpha = hatch; c.lineWidth = spacing * 0.45; c.stroke();
+  c.restore();
+  c.globalAlpha = 1;
+}
+
+// ---------- watercolor ----------
+function deform(poly, rounds, v, r) {
+  for (let k = 0; k < rounds; k++) {
+    const out = [];
+    for (let i = 0; i < poly.length; i++) {
+      const a = poly[i], b = poly[(i + 1) % poly.length];
+      const len = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1e-6;
+      const nx = -(b[1] - a[1]) / len, ny = (b[0] - a[0]) / len, off = gauss(r) * v * len;
+      out.push(a, [(a[0] + b[0]) / 2 + nx * off, (a[1] + b[1]) / 2 + ny * off]);
+    }
+    poly = out; v *= 0.65;
+  }
+  return poly;
+}
+function polyPath(p) {
+  const path = new Path2D();
+  path.moveTo(p[0][0], p[0][1]);
+  for (let i = 1; i < p.length; i++) path.lineTo(p[i][0], p[i][1]);
+  path.closePath();
+  return path;
+}
+// Each wash is a stack of translucent, slightly different deformed polygons (two boil variants).
+function makeLayers(r, base, layers, v, jitterAmt) {
+  const A = [], B = [];
+  for (let l = 0; l < layers; l++) {
+    const p = deform(base, 1, v, r);
+    A.push(polyPath(p));
+    B.push(polyPath(p.map(([x, y]) => [x + gauss(r) * jitterAmt, y + gauss(r) * jitterAmt])));
+  }
+  return [A, B];
+}
+function makeWash(r, nBase = 10, layers = 4) {
+  const base = [];
+  for (let i = 0; i < nBase; i++) {
+    const a = i / nBase * Math.PI * 2, rad = 1 + (r() - 0.5) * 0.3;
+    base.push([Math.cos(a) * rad, Math.sin(a) * rad]);
+  }
+  return makeLayers(r, deform(base, 2, 0.32, r), layers, 0.28, 0.012);
+}
+function makeBand(r, edgeFn, closeY, layers) {
+  const v = [];
+  for (let l = 0; l < layers; l++) {
+    const poly = [], off = r() * 100;
+    for (let x = -420; x <= 2340; x += 40) poly.push([x, edgeFn(x, l) + noise1(x * 0.006 + off, 5) * 22]);
+    for (let x = 2340; x >= -420; x -= 120) poly.push([x, closeY(x)]);
+    v.push(poly);
+  }
+  const A = [], B = [];
+  for (const p of v) {
+    const d = deform(p, 1, 0.12, r);
+    A.push(polyPath(d));
+    B.push(polyPath(d.map(([x, y]) => [x + gauss(r) * 1.5, y + gauss(r) * 1.5])));
+  }
+  return [A, B];
+}
+function drawPaths(c, wash, color, alpha, edgeW = 1.6) {
+  const layers = wash[BOIL % 2];
+  c.fillStyle = color; c.strokeStyle = color; c.lineWidth = edgeW;
+  for (const p of layers) {
+    c.globalAlpha = alpha; c.fill(p);
+    c.globalAlpha = alpha * 0.9; c.stroke(p);   // pigment pools at the edge
+  }
+  c.globalAlpha = 1;
+}
+function drawWash(c, wash, x, y, rad, rot, color, alpha) {
+  if (rad <= 0.5) return;
+  c.save(); c.translate(x, y); c.rotate(rot); c.scale(rad, rad);
+  drawPaths(c, wash, color, alpha, 1.6 / rad);
+  c.restore();
+}
+function hexRgb(h) { const n = parseInt(h.slice(1), 16); return [n >> 16, (n >> 8) & 255, n & 255]; }
+function mixHex(a, b, t) {
+  const A = hexRgb(a), B = hexRgb(b);
+  return `rgb(${lerp(A[0], B[0], t) | 0},${lerp(A[1], B[1], t) | 0},${lerp(A[2], B[2], t) | 0})`;
+}
+
+// ---------- canvases ----------
+const cvs = document.getElementById('c');
+cvs.width = W; cvs.height = H;
+const ctx = cvs.getContext('2d');
+const mkCanvas = (w = W, h = H) => { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; };
+const colLayer = mkCanvas(), inkLayer = mkCanvas();
+const cctx = colLayer.getContext('2d'), ictx = inkLayer.getContext('2d');
+
+function makePaper() {
+  const p = mkCanvas(), c = p.getContext('2d'), r = mulberry32(7);
+  c.fillStyle = '#f3ecdd'; c.fillRect(0, 0, W, H);
+  for (let i = 0; i < 60; i++) {
+    const x = r() * W, y = r() * H, rad = 80 + r() * 300;
+    const tone = r() < 0.5 ? 'rgba(190,160,110,' : 'rgba(255,255,248,';
+    const g = c.createRadialGradient(x, y, 0, x, y, rad);
+    g.addColorStop(0, tone + (0.06 * r()).toFixed(3) + ')'); g.addColorStop(1, tone + '0)');
+    c.fillStyle = g; c.fillRect(x - rad, y - rad, rad * 2, rad * 2);
+  }
+  c.lineWidth = 1;
+  for (let i = 0; i < 700; i++) {
+    const x = r() * W, y = r() * H, a = r() * Math.PI * 2, l = 10 + r() * 30;
+    c.strokeStyle = `rgba(120,95,60,${(0.03 + r() * 0.05).toFixed(3)})`;
+    c.beginPath(); c.moveTo(x, y);
+    c.quadraticCurveTo(x + Math.cos(a + 0.5) * l * 0.5, y + Math.sin(a + 0.5) * l * 0.5, x + Math.cos(a) * l, y + Math.sin(a) * l);
+    c.stroke();
+  }
+  const img = c.getImageData(0, 0, W, H), d = img.data;
+  for (let i = 0; i < d.length; i += 4) { const n = (r() - 0.5) * 16; d[i] += n; d[i + 1] += n; d[i + 2] += n; }
+  c.putImageData(img, 0, 0);
+  const g = c.createRadialGradient(W / 2, H / 2, H * 0.45, W / 2, H / 2, H * 1.05);
+  g.addColorStop(0, 'rgba(80,60,30,0)'); g.addColorStop(1, 'rgba(80,60,30,0.22)');
+  c.fillStyle = g; c.fillRect(0, 0, W, H);
+  return p;
+}
+// Paper tooth: random speckle that gets erased out of pigment, so crayon and paint skip over the grain.
+function makeGrain(seed) {
+  const gw = W / 2, gh = H / 2, g = mkCanvas(gw, gh), c = g.getContext('2d');
+  const img = c.createImageData(gw, gh), d = img.data, r = mulberry32(seed);
+  for (let i = 0; i < d.length; i += 4) {
+    const v = r();
+    d[i + 3] = v < 0.07 ? 140 + v * 1000 : v < 0.26 ? (v - 0.07) * 250 : 0;
+  }
+  c.putImageData(img, 0, 0);
+  return g;
+}
+const paper = makePaper();
+const grains = [makeGrain(1), makeGrain(2), makeGrain(3)];
+
+// ---------- scene data ----------
+const groundY = x => GROUND_Y + 5 * Math.sin(x * 0.0031 + 1) + 3 * Math.sin(x * 0.011 + 2);
+const BASE_Y = groundY(TREE_X);
+const groundPts = [];
+for (let x = -280; x <= 2200; x += 8) groundPts.push([x, groundY(x)]);
+const groundEnd = t => lerp(-280, 2200, easeOut(prog(t, 0, 1.6)));
+const groundTimeAt = x => 1.6 * (1 - Math.cbrt(1 - clamp((x + 280) / 2480)));
+
+const R0 = mulberry32(11);
+const DIRT_COLORS = ['#c99b55', '#a8743e', '#dcb978', '#80583a'];
+const dirt = DIRT_COLORS.map(() => []);
+for (let i = 0; i < 1300; i++) {
+  const x = -280 + R0() * 2480, d = Math.pow(R0(), 1.7) * 48;
+  dirt[i % 4].push({ x, y: groundY(x) + 4 + d, len: 7 + R0() * 18 * (1 - d / 70), a: (R0() - 0.5) * 0.3, id: i });
+}
+const dashes = [];
+for (let i = 0; i < 220; i++) {
+  const x = -280 + R0() * 2480;
+  dashes.push({ x, y: groundY(x) + 6 + Math.pow(R0(), 1.5) * 32, len: 5 + R0() * 12, id: 2000 + i });
+}
+const pebbles = [];
+for (let i = 0; i < 34; i++) {
+  const x = -260 + R0() * 2440;
+  pebbles.push({ x, y: groundY(x) + 10 + R0() * 34, rx: 3 + R0() * 4, ry: 2 + R0() * 2.5, id: 2400 + i });
+}
+const tufts = [];
+for (let i = 0; i < 46; i++) {
+  let x = -200 + R0() * 2320;
+  if (Math.abs(x - TREE_X) < 90) x += 180;
+  const blades = [], n = 3 + ((R0() * 4) | 0);
+  for (let k = 0; k < n; k++) blades.push({ dx: (R0() - 0.5) * 14, len: 12 + R0() * 22, a: -Math.PI / 2 + (R0() - 0.5) * 0.9, bend: (R0() - 0.5) * 0.6 });
+  tufts.push({ x, id: 300 + i, blades, flower: R0() < 0.28 ? (R0() < 0.5 ? '#d9443a' : '#5b7fd1') : null, t0: 0 });
+}
+for (const tf of tufts) tf.t0 = groundTimeAt(tf.x) + 0.05;
+
+// Tree: a recursive branching structure, each branch growing after its parent finishes.
+const RT = mulberry32(2024);
+const branches = [], tips = [];
+const MAXD = 7;
+function addBranch(x, y, ang, len, w, depth, t0) {
+  const b = { id: 3000 + branches.length * 3, x, y, ang, len, w0: w, w1: w * (depth === 0 ? 0.62 : 0.66), depth, t0, dur: (len / 175) * (depth === 0 ? 1.5 : 1) };
+  b.ex = x + Math.cos(ang) * len; b.ey = y + Math.sin(ang) * len;
+  const bend = (RT() - 0.5) * 0.3 * len;
+  b.cx = (x + b.ex) / 2 - Math.sin(ang) * bend; b.cy = (y + b.ey) / 2 + Math.cos(ang) * bend;
+  b.bark = depth <= 1 ? Array.from({ length: 7 }, () => ({ u: 0.08 + RT() * 0.85, off: (RT() - 0.5) * 0.6, l: 0.18 + RT() * 0.2 })) : [];
+  branches.push(b);
+  if (depth < MAXD) {
+    const n = depth >= 2 && RT() < 0.15 ? 3 : 2;
+    const spread = 0.42 + RT() * 0.22;
+    for (let k = 0; k < n; k++) {
+      let a = ang + (k - (n - 1) / 2) * spread * (n === 3 ? 0.9 : 1.4) + (RT() - 0.5) * 0.3;
+      a = clamp(lerp(a, -Math.PI / 2, 0.1), -Math.PI + 0.25, -0.25);
+      addBranch(b.ex, b.ey, a, len * (0.68 + RT() * 0.14), b.w1, depth + 1, b.t0 + b.dur + RT() * 0.12);
+    }
+  } else tips.push(b);
+}
+addBranch(TREE_X, BASE_Y + 2, -Math.PI / 2, 200, 38, 0, 4.0);
+const treeThick = t => lerp(0.18, 1, easeInOut(prog(t, 4.0, 6.5)));
+
+const GREENS = ['#7fae4f', '#93bf5e', '#5f9445', '#a9c86a'];
+const AUTUMN = ['#e8742a', '#f2a03a', '#d8492b', '#f3c445', '#c23b27', '#ee8a3c'];
+const RW = mulberry32(99);
+const blobWashes = Array.from({ length: 12 }, () => makeWash(RW, 9, 4));
+const sunWash = makeWash(RW, 12, 5), sunCore = makeWash(RW, 10, 3);
+// Sky layers stop at staggered heights so the wash fades out instead of ending in one hard edge.
+const skyWash = makeBand(RW, (x, l) => 170 + l * 70 + 40 * Math.sin(x * 0.002 + l * 1.7), () => -500, 5);
+const hill = (x, a, b, c) => a - b * Math.exp(-(((x - c) / 420) ** 2));
+const farHills = makeBand(RW, x => hill(x, 770, 120, 1250) - 60 * Math.exp(-(((x - 150) / 300) ** 2)), x => groundY(x) + 2, 4);
+const nearHills = makeBand(RW, x => hill(x, 812, 60, 380) - 45 * Math.exp(-(((x - 1560) / 400) ** 2)), x => groundY(x) + 2, 4);
+
+const blobs = [];
+function addBlob(x, y, t0) {
+  const r = 24 + RW() * 26;
+  blobs.push({
+    x, y, r, t0, wash: pick(RW, blobWashes), rot: RW() * 6.28, green: pick(RW, GREENS), autumn: pick(RW, AUTUMN),
+    dly: RW() * 1.3, ph: RW() * 6.28, id: 6000 + blobs.length * 5,
+    leaves: RW() < 0.2 ? Array.from({ length: 3 }, () => ({ dx: (RW() - 0.5) * r * 1.4, dy: (RW() - 0.5) * r, a: RW() * 6.28 })) : null,
+    spat: Array.from({ length: 2 }, () => { const a = RW() * 6.28, d = 1.1 + RW() * 0.5; return { dx: Math.cos(a) * d, dy: Math.sin(a) * d, s: 1.5 + RW() * 2.5 }; }),
+  });
+}
+for (const b of tips) {
+  const n = 1 + (RW() < 0.5 ? 1 : 0);
+  for (let k = 0; k < n; k++) addBlob(b.ex + (RW() - 0.5) * 24, b.ey + (RW() - 0.5) * 24, b.t0 + b.dur + RW() * 0.5);
+}
+for (const b of branches) {
+  if (b.depth === MAXD - 1 && RW() < 0.45) addBlob(lerp(b.x, b.ex, 0.7), lerp(b.y, b.ey, 0.7), b.t0 + b.dur + 0.3 + RW() * 0.6);
+}
+blobs.sort((a, b) => a.t0 - b.t0);
+
+const RL = mulberry32(5);
+const falling = [];
+for (let i = 0; i < 28; i++) {
+  const b = pick(RL, blobs);
+  falling.push({
+    ts: 11.6 + i * 0.13 + RL() * 0.5, sx: b.x + (RL() - 0.5) * b.r, sy: b.y + (RL() - 0.5) * b.r * 0.6,
+    L: 11 + RL() * 7, sway: 25 + RL() * 35, freq: 1.6 + RL() * 1.4, ph: RL() * 6, drift: 18 + RL() * 30,
+    spin: (RL() - 0.5) * 2, vy: 85 + RL() * 45, color: pick(RL, AUTUMN), rest: Math.PI / 2 + (RL() - 0.5) * 0.4, id: 9000 + i * 7,
+  });
+}
+const LEAF = (L) => [...quadPts([0, -L], [L * 0.65, 0], [0, L], 8), ...quadPts([0, L], [-L * 0.65, 0], [0, -L], 8).slice(1, -1)];
+const SEED_SHAPE = [...quadPts([0, -15], [17, 3], [0, 10], 10), ...quadPts([0, 10], [-17, 3], [0, -15], 10).slice(1, -1)];
+
+// ---------- time-dependent state ----------
+function camera(t) {
+  const e = easeInOut(prog(t, 3.6, 7.4));
+  return { s: lerp(1.9, 1, e), x: TREE_X + 4 * Math.sin(t * 0.7), y: lerp(775, 540, e) + 3 * Math.sin(t * 0.9 + 1) };
+}
+function branchGeo(b, t, th) {
+  const g = easeOut(prog(t, b.t0, b.dur) ** 0.9);
+  if (g <= 0) return null;
+  const n = Math.max(2, Math.ceil(b.len * g / 12));
+  const C = [], L = [], R = [];
+  for (let i = 0; i <= n; i++) {
+    const u = i / n * g, iu = 1 - u;
+    C.push([iu * iu * b.x + 2 * iu * u * b.cx + u * u * b.ex, iu * iu * b.y + 2 * iu * u * b.cy + u * u * b.ey, u]);
+  }
+  for (let i = 0; i <= n; i++) {
+    const a = C[Math.max(0, i - 1)], z = C[Math.min(n, i + 1)];
+    const tx = z[0] - a[0], ty = z[1] - a[1], tl = Math.hypot(tx, ty) || 1;
+    const nx = -ty / tl, ny = tx / tl, w = lerp(b.w0, b.w1, C[i][2]) * th / 2;
+    L.push([C[i][0] + nx * w, C[i][1] + ny * w]);
+    R.push([C[i][0] - nx * w, C[i][1] - ny * w]);
+  }
+  return { b, g, C, L, R, w: b.w0 * th };
+}
+function seedState(t) {
+  if (t < 1.1 || t > 5.6) return null;
+  const p = prog(t, 1.1, 1.8);
+  let y = lerp(470, BASE_Y - 9, p * p);
+  const x = TREE_X + Math.sin(p * 9) * 22 * (1 - p);
+  const rot = Math.sin(p * 9 + 1) * 0.7 * (1 - p) + 0.3;
+  const bounce = prog(t, 2.9, 0.35);
+  if (bounce > 0 && bounce < 1) y -= Math.sin(bounce * Math.PI) * 14;
+  y += easeInOut(prog(t, 3.3, 0.8)) * 9;
+  return { x, y, rot, alpha: 1 - prog(t, 4.6, 0.8) };
+}
+function leafState(f, t) {
+  if (t < f.ts) return null;
+  const tlRel = (groundY(f.sx) - 5 - f.sy) / f.vy, te = Math.min(t - f.ts, tlRel);
+  const x = f.sx + Math.sin(te * f.freq + f.ph) * f.sway * Math.min(1, te) + f.drift * te;
+  const y = Math.min(f.sy + f.vy * te, groundY(x) - 5);
+  const fly = Math.sin(te * f.freq + f.ph) * 0.9 + f.spin * te;
+  return { x, y, rot: lerp(fly, f.rest, smooth(prog(te, tlRel - 0.35, 0.35))), s: easeOut(prog(t, f.ts, 0.25)) };
+}
+function birdGeo(i, t) {
+  const t0 = 8.6 + i * 0.45, p = prog(t, t0, 6.2);
+  if (p <= 0 || p >= 1) return null;
+  const x = lerp(-120, 2060, p), y = 250 + i * 48 + Math.sin(t * 1.3 + i * 2) * 16 - p * 40;
+  const s = 26 - i * 4, f = Math.sin(t * 9 + i * 1.7);
+  const tipY = -s * 0.35 * f, ctlY = -s * 0.55 * f - s * 0.1;
+  return [...quadPts([x - s, y + tipY], [x - s * 0.45, y + ctlY], [x, y], 6), ...quadPts([x, y], [x + s * 0.45, y + ctlY], [x + s, y + tipY], 6).slice(1)];
+}
+function bugState(t) {
+  if (t < 10.6) return null;
+  const p = easeOut(prog(t, 10.6, 4.2)), x = lerp(2080, 1240, p);
+  const phase = (2080 - x) * 0.22, moving = p < 0.995, R = 30;
+  const gy = groundY(x), bob = moving ? -Math.abs(Math.sin(phase)) * 2 : 0;
+  return { x, gy, R, phase, moving, cy: gy - R * 0.62 - 7 + bob, look: prog(t, 14.9, 0.6) };
+}
+
+function computeScene(t) {
+  const th = treeThick(t);
+  const tree = [];
+  for (const b of branches) { const g = branchGeo(b, t, th); if (g) tree.push(g); }
+  const trunk = tree[0];
+  return { t, th, tree, trunkTip: trunk ? trunk.C[trunk.C.length - 1] : null, xEnd: groundEnd(t) };
+}
+
+// ---------- color layer (crayon + watercolor) ----------
+function drawColor(c, S) {
+  const t = S.t;
+  const skyA = prog(t, 4.5, 2.5), hillA = prog(t, 5.0, 2.5);
+  if (skyA > 0) drawPaths(c, skyWash, '#9ec3dc', 0.085 * skyA, 2);
+  // sun
+  const sunA = prog(t, 4.4, 1.0);
+  if (sunA > 0) {
+    const sy = lerp(560, 250, easeOut(prog(t, 4.4, 4)));
+    drawWash(c, sunWash, 1560, sy, 108, 0.3, '#f5b335', 0.2 * sunA);
+    drawWash(c, sunCore, 1560, sy, 62, 1.2, '#f08a2c', 0.14 * sunA);
+  }
+  if (hillA > 0) {
+    drawPaths(c, farHills, '#b3c4c4', 0.13 * hillA, 2);
+    drawPaths(c, nearHills, '#a9bf86', 0.15 * hillA, 2);
+  }
+  // dirt band under the ground line
+  c.lineCap = 'round';
+  DIRT_COLORS.forEach((col, k) => {
+    c.beginPath();
+    for (const s of dirt[k]) {
+      if (s.x > S.xEnd) continue;
+      const j = jit(s.id, 4) * 1.2, dx = Math.cos(s.a) * s.len / 2, dy = Math.sin(s.a) * s.len / 2;
+      c.moveTo(s.x - dx + j, s.y - dy); c.lineTo(s.x + dx + j, s.y + dy + jit(s.id, 5));
+    }
+    c.strokeStyle = col; c.lineWidth = 2.6; c.globalAlpha = 0.75; c.stroke();
+  });
+  c.globalAlpha = 1;
+  // grass
+  for (const tf of tufts) {
+    const s = easeOutBack(prog(t, tf.t0, 0.4));
+    if (s <= 0) continue;
+    const geo = tuftGeo(tf, t, s);
+    c.strokeStyle = '#6e9b45'; c.lineWidth = 3.5; c.globalAlpha = 0.8;
+    for (const bl of geo) { tracePath(c, wobble(bl, 0.8, tf.id)); c.stroke(); }
+    c.globalAlpha = 1;
+    if (tf.flower) { const tip = tallest(geo); crayon(c, ellipsePts(tip[0], tip[1], 5 * s, 5 * s, 10), tf.flower, tf.id + 9, { spacing: 3 }); }
+  }
+  // tree trunk + branches
+  for (const G of S.tree) {
+    if (G.w < 4) continue;
+    tracePath(c, G.L.concat(G.R.slice().reverse()), true);
+    c.fillStyle = '#9a6a3f'; c.globalAlpha = 0.88; c.fill();
+    if (G.w >= 8) {
+      shadeLine(c, G, 0.55, '#5d3b1f', 0.55);
+      shadeLine(c, G, 0.78, '#5d3b1f', 0.4);
+      shadeLine(c, G, -0.45, '#c9925a', 0.5);
+    }
+    c.globalAlpha = 1;
+  }
+  // foliage: watercolor clumps that turn from green to autumn
+  for (const bl of blobs) {
+    const s = easeOutBack(prog(t, bl.t0, 0.55));
+    if (s <= 0) continue;
+    const season = smooth(prog(t, 10.2 + bl.dly, 1.2));
+    const col = mixHex(bl.green, bl.autumn, season);
+    const rad = bl.r * s * (1 + 0.025 * Math.sin(t * 2 + bl.ph));
+    drawWash(c, bl.wash, bl.x, bl.y, rad, bl.rot, col, 0.2);
+    c.fillStyle = col; c.globalAlpha = 0.5;
+    for (const sp of bl.spat) { c.beginPath(); c.arc(bl.x + sp.dx * rad, bl.y + sp.dy * rad, sp.s, 0, 6.29); c.fill(); }
+    c.globalAlpha = 1;
+  }
+  for (const f of falling) {
+    const L = leafState(f, t);
+    if (L) crayon(c, xform(LEAF(f.L), L.x, L.y, L.rot, L.s), f.color, f.id, { spacing: 3.5, alpha: 0.85 });
+  }
+  // ladybug
+  const bug = bugState(t);
+  if (bug) {
+    crayon(c, ellipsePts(bug.x, bug.cy, bug.R, bug.R * 0.68, 30), '#d8392b', 7100, { spacing: 4, dark: '#a8231a' });
+    crayon(c, ellipsePts(bug.x - bug.R * 0.95, bug.cy + bug.R * 0.18, bug.R * 0.42, bug.R * 0.4, 18), '#2d2a36', 7110, { spacing: 3 });
+    for (const [dx, dy, r] of [[-0.35, -0.3, 0.17], [0.15, -0.42, 0.15], [0.5, -0.1, 0.16], [-0.05, 0.12, 0.14], [0.62, 0.3, 0.1]]) {
+      crayon(c, ellipsePts(bug.x + dx * bug.R, bug.cy + dy * bug.R, r * bug.R, r * bug.R, 10), '#2d2a36', 7120 + dx * 100, { spacing: 3 });
+    }
+  }
+  // seed
+  const sd = seedState(t);
+  if (sd) withGroundClip(c, sd.x, () => { c.globalAlpha = sd.alpha; crayon(c, xform(SEED_SHAPE, sd.x, sd.y, sd.rot), '#8d5a2c', 7200, { spacing: 3, alpha: 0.85 * sd.alpha }); });
+  // sprout leaves at the growing tip
+  const sp = sproutScale(t);
+  if (sp > 0 && S.trunkTip) {
+    for (const side of [-1, 1]) crayon(c, sproutLeaf(S.trunkTip, side, sp), '#7fb04e', 7300 + side, { spacing: 3 });
+  }
+}
+function shadeLine(c, G, f, color, alpha) {
+  const pts = G.C.map((p, i) => {
+    const q = f > 0 ? G.R[i] : G.L[i], a = Math.abs(f);
+    return [lerp(p[0], q[0], a), lerp(p[1], q[1], a)];
+  });
+  c.strokeStyle = color; c.globalAlpha = alpha; c.lineWidth = 2.2;
+  tracePath(c, wobble(pts, 1, G.b.id + 1 + f * 10)); c.stroke();
+}
+function tuftGeo(tf, t, s) {
+  const gy = groundY(tf.x);
+  return tf.blades.map((b, k) => {
+    const a = b.a + Math.sin(t * 1.8 + tf.x * 0.02 + k) * 0.08, L = b.len * s;
+    const x0 = tf.x + b.dx, y0 = gy + 1;
+    return quadPts([x0, y0], [x0 + Math.cos(a - b.bend) * L * 0.55, y0 + Math.sin(a - b.bend) * L * 0.55], [x0 + Math.cos(a) * L, y0 + Math.sin(a) * L], 6);
+  });
+}
+const tallest = geo => geo.reduce((m, bl) => bl[bl.length - 1][1] < m[1] ? bl[bl.length - 1] : m, [0, Infinity]);
+const sproutScale = t => easeOutBack(prog(t, 4.05, 0.5)) * (1 - smooth(prog(t, 5.3, 0.7)));
+function sproutLeaf(tip, side, s) {
+  return xform(LEAF(9), tip[0] + side * 9 * s, tip[1] - 2, side * 0.95, s * 1.1);
+}
+function withGroundClip(c, x, fn) {
+  c.save(); c.beginPath(); c.rect(x - 60, groundY(x) - 400, 120, 400); c.clip();
+  fn();
+  c.restore(); c.globalAlpha = 1;
+}
+
+// ---------- ink layer ----------
+function drawInk(c, S) {
+  const t = S.t;
+  // ground line drawing itself across the page
+  const gp = groundPts.filter(p => p[0] <= S.xEnd);
+  ink(c, gp, 1, 2.6, 1.4);
+  c.strokeStyle = INK; c.lineCap = 'round'; c.lineWidth = 1.5; c.globalAlpha = 0.5;
+  c.beginPath();
+  for (const d of dashes) {
+    if (d.x > S.xEnd) continue;
+    c.moveTo(d.x + jit(d.id, 1), d.y + jit(d.id, 2) * 0.8); c.lineTo(d.x + d.len + jit(d.id, 3), d.y + jit(d.id, 4) * 0.8);
+  }
+  c.stroke(); c.globalAlpha = 1;
+  for (const p of pebbles) if (p.x < S.xEnd) ink(c, closed(ellipsePts(p.x, p.y, p.rx, p.ry, 10)), p.id, 1.3, 0.6, 0.7);
+  for (const tf of tufts) {
+    const s = easeOutBack(prog(t, tf.t0, 0.4));
+    if (s <= 0) continue;
+    const geo = tuftGeo(tf, t, s);
+    geo.forEach((bl, k) => ink(c, bl, tf.id * 10 + k, 1.5, 0.7));
+    if (tf.flower) { const tip = tallest(geo); ink(c, closed(ellipsePts(tip[0], tip[1], 5 * s, 5 * s, 10)), tf.id + 500, 1.3, 0.5); }
+  }
+  // sun rays
+  const sunA = prog(t, 4.4, 1.0);
+  if (sunA > 0) {
+    const sy = lerp(560, 250, easeOut(prog(t, 4.4, 4)));
+    for (let k = 0; k < 11; k++) {
+      const a = k / 11 * Math.PI * 2 + t * 0.12, show = easeOutBack(prog(t, 6.2 + k * 0.08, 0.4));
+      if (show <= 0) continue;
+      const r0 = 128, r1 = r0 + (26 + 8 * Math.sin(t * 2.2 + k)) * show;
+      ink(c, [[1560 + Math.cos(a) * r0, sy + Math.sin(a) * r0], [1560 + Math.cos(a) * r1, sy + Math.sin(a) * r1]], 400 + k, 2.2, 1, 0.8);
+    }
+  }
+  // tree outlines + bark
+  for (const G of S.tree) {
+    if (G.w >= 5) {
+      ink(c, G.L, G.b.id, 2.2, 1.1);
+      ink(c, G.R, G.b.id + 1, 2.2, 1.1);
+      for (const bk of G.b.bark) {
+        if (bk.u > G.g) continue;
+        const i = Math.round(bk.u / G.g * (G.C.length - 1)), p = G.C[i], l = G.L[i];
+        const ox = (l[0] - p[0]), oy = (l[1] - p[1]);
+        const cx = p[0] + ox * bk.off, cy = p[1] + oy * bk.off;
+        ink(c, [[cx - ox * bk.l, cy - oy * bk.l + 3], [cx + ox * bk.l, cy + oy * bk.l - 3]], G.b.id + 2 + bk.u * 100, 1.4, 0.6, 0.75);
+      }
+    } else {
+      ink(c, G.C, G.b.id, Math.max(1.2, G.w * 0.75), 0.8);
+    }
+  }
+  for (const bl of blobs) {
+    if (!bl.leaves) continue;
+    const s = easeOut(prog(t, bl.t0 + 0.2, 0.4));
+    if (s <= 0) continue;
+    bl.leaves.forEach((lf, k) => ink(c, closed(xform(LEAF(6), bl.x + lf.dx, bl.y + lf.dy, lf.a, s)), bl.id + k, 1.2, 0.4, 0.7));
+  }
+  for (const f of falling) {
+    const L = leafState(f, t);
+    if (!L) continue;
+    ink(c, closed(xform(LEAF(f.L), L.x, L.y, L.rot, L.s)), f.id, 1.6, 0.6);
+    ink(c, xform([[0, -f.L * 0.75], [0, f.L * 1.25]], L.x, L.y, L.rot, L.s), f.id + 1, 1.2, 0.4, 0.8);
+  }
+  for (let i = 0; i < 3; i++) { const g = birdGeo(i, t); if (g) ink(c, g, 450 + i, 2.6, 0.8); }
+  // ladybug
+  const bug = bugState(t);
+  if (bug) {
+    const { x, cy, R, gy, phase, moving } = bug;
+    ink(c, closed(ellipsePts(x, cy, R, R * 0.68, 30)), 7101, 2.2, 0.9);
+    ink(c, quadPts([x - R * 0.62, cy - R * 0.5], [x + R * 0.1, cy - R * 0.2], [x + R * 0.95, cy + R * 0.12], 8), 7102, 1.5, 0.6, 0.8);
+    const hx = x - R * 0.95, hy = cy + R * 0.18;
+    ink(c, closed(ellipsePts(hx, hy, R * 0.42, R * 0.4, 18)), 7103, 2, 0.6);
+    for (let k = 0; k < 3; k++) {
+      const lx = x + (k - 1) * R * 0.5, kick = moving ? Math.sin(phase + k * 2.1) * 5 : 0;
+      ink(c, [[lx, cy + R * 0.55], [lx - 2 + kick, gy - 1]], 7104 + k, 1.8, 0.4);
+    }
+    const look = smooth(bug.look);
+    for (const s of [-1, 1]) {
+      const bx = hx - R * 0.2 + s * 4, by = hy - R * 0.35;
+      const tx = bx - R * 0.35 + s * 6, ty = by - R * (0.55 + 0.25 * look) + Math.sin(t * 6 + s) * 2;
+      ink(c, quadPts([bx, by], [bx - R * 0.05, ty + 4], [tx, ty], 6), 7110 + s, 1.6, 0.4);
+      c.fillStyle = INK; c.beginPath(); c.arc(tx, ty, 3, 0, 6.29); c.fill();
+    }
+    c.fillStyle = '#fbf6ec'; c.beginPath(); c.arc(hx - R * 0.12, hy - R * 0.08, R * 0.15, 0, 6.29); c.fill();
+    c.fillStyle = INK; c.beginPath(); c.arc(hx - R * 0.17, hy - R * 0.08 - look * R * 0.06, R * 0.07, 0, 6.29); c.fill();
+  }
+  // seed + landing dust
+  const sd = seedState(t);
+  if (sd) withGroundClip(c, sd.x, () => {
+    ink(c, closed(xform(SEED_SHAPE, sd.x, sd.y, sd.rot)), 7201, 2, 0.6, sd.alpha);
+    ink(c, xform(quadPts([-3, -8], [-6, -2], [-3, 4], 5), sd.x, sd.y, sd.rot), 7202, 1.3, 0.3, 0.6 * sd.alpha);
+  });
+  const dp = prog(t, 2.95, 1.1);
+  if (dp > 0 && dp < 1) {
+    for (let k = 0; k < 7; k++) {
+      const dir = k % 2 ? 1 : -1, off = (k >> 1) * 0.35 + 0.2;
+      const cx = TREE_X + dir * (14 + off * 40 + easeOut(dp) * 26 * (1 + off)), cy = BASE_Y - 8 - (k % 3) * 6 - easeOut(dp) * 10;
+      const r = lerp(5, 15 + k, easeOut(dp)), pts = [];
+      for (let a = 0; a < Math.PI * 2.4; a += 0.25) pts.push([cx + Math.cos(a) * r * (1 + 0.15 * Math.sin(3 * a)), cy + Math.sin(a) * r * 0.7]);
+      ink(c, pts, 7300 + k, 1.5, 0.6, 1 - dp);
+    }
+  }
+  const sp = sproutScale(t);
+  if (sp > 0 && S.trunkTip) {
+    for (const side of [-1, 1]) {
+      ink(c, closed(sproutLeaf(S.trunkTip, side, sp)), 7400 + side, 1.6, 0.4);
+    }
+  }
+}
+
+// ---------- screen-space handwriting ----------
+function dayLabel(c, t) {
+  const s = easeOutBack(prog(t, 0.5, 0.45));
+  if (s <= 0) return;
+  const u = prog(Math.floor(t * 8) / 8, 3.9, 7.6), days = 1 + Math.floor(Math.pow(u, 2.4) * 10957);
+  const text = days < 365 ? `day ${days}` : `year ${Math.floor(days / 365)}`;
+  c.save();
+  c.translate(70, 58); c.scale(s, s); c.rotate(-0.015 + jit(50, 1) * 0.004);
+  c.font = `700 56px ${FONT}`;
+  const w = 210, h = 78;
+  ink(c, closed(resample([[0, 0], [w, 0], [w, h], [0, h]], 20)), 51, 3, 1.2);
+  ink(c, [[w + 5, 6], [w + 6, h + 5], [6, h + 6]], 52, 4.5, 0.8, 0.85);
+  c.fillStyle = INK; c.textBaseline = 'middle';
+  c.fillText(text, 20 + jit(53, 1), h / 2 + 4 + jit(53, 2));
+  c.restore();
+}
+function caption(c, text, t, tStart, writeDur, tOut, id, underline = false) {
+  const p = prog(t, tStart, writeDur);
+  if (p <= 0) return;
+  const fade = tOut ? 1 - prog(t, tOut, 0.5) : 1;
+  if (fade <= 0) return;
+  c.save();
+  c.font = `600 80px ${FONT}`;
+  c.textAlign = 'center';
+  const w = c.measureText(text).width;
+  c.beginPath(); c.rect(W / 2 - w / 2 - 20, 900, (w + 40) * easeInOut(p), 180); c.clip();
+  c.translate(W / 2 + jit(id, 1) * 1.2, 1012 + jit(id, 2) * 1.2);
+  c.rotate(-0.012 + jit(id, 3) * 0.004);
+  c.fillStyle = INK; c.globalAlpha = fade * 0.93; c.fillText(text, 0, 0);
+  c.globalAlpha = fade * 0.25; c.fillText(text, 1.4, 1);
+  c.restore();
+  if (underline) {
+    const u = easeInOut(prog(t, tStart + writeDur + 0.15, 0.55));
+    if (u > 0) {
+      const pts = [];
+      for (let x = 0; x <= u * 1; x += 0.01) pts.push([W / 2 - w * 0.42 + x * w * 0.84, 1036 + Math.sin(x * 26) * 4]);
+      ink(c, pts, id + 9, 3, 1, fade);
+    }
+  }
+}
+
+// ---------- frame ----------
+function beginLayer(c, cam) {
+  c.setTransform(1, 0, 0, 1, 0, 0);
+  c.globalAlpha = 1; c.globalCompositeOperation = 'source-over';
+  c.clearRect(0, 0, W, H);
+  c.setTransform(cam.s, 0, 0, cam.s, W / 2 - cam.x * cam.s, H / 2 - cam.y * cam.s);
+}
+function eraseGrain(c, amount) {
+  c.setTransform(1, 0, 0, 1, 0, 0);
+  c.globalCompositeOperation = 'destination-out'; c.globalAlpha = amount;
+  c.drawImage(grains[BOIL % grains.length], 0, 0, W, H);
+  c.globalCompositeOperation = 'source-over'; c.globalAlpha = 1;
+}
+function render(t) {
+  BOIL = Math.floor(t * 8);
+  const cam = camera(t), S = computeScene(t);
+
+  beginLayer(cctx, cam);
+  drawColor(cctx, S);
+  eraseGrain(cctx, 1);
+
+  beginLayer(ictx, cam);
+  drawInk(ictx, S);
+  ictx.setTransform(1, 0, 0, 1, 0, 0);
+  dayLabel(ictx, t);
+  caption(ictx, 'it all started with one tiny seed.', t, 0.4, 1.6, 3.4, 60);
+  caption(ictx, '...and it never stopped growing.', t, 12.4, 1.6, 0, 70, true);
+  eraseGrain(ictx, 0.45);
+
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.globalAlpha = 1;
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.drawImage(paper, 0, 0);
+  ctx.globalCompositeOperation = 'multiply';
+  ctx.drawImage(colLayer, 0, 0);
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.drawImage(inkLayer, 0, 0);
+}
+
+// ---------- playback + export hooks ----------
+const EXPORT = new URLSearchParams(location.search).has('export');
+if (EXPORT) document.body.classList.add('export');
+window.ANIM = {
+  duration: DURATION, fps: FPS,
+  frame(t) { render(t); return cvs.toDataURL('image/png').split(',')[1]; },
+};
+const playBtn = document.getElementById('play'), scrub = document.getElementById('scrub'), timeEl = document.getElementById('time');
+let playing = !EXPORT, startAt = 0, cur = 0;
+playBtn.onclick = () => { playing = !playing; playBtn.textContent = playing ? 'Pause' : 'Play'; startAt = performance.now() - cur * 1000; };
+scrub.oninput = () => { cur = +scrub.value; startAt = performance.now() - cur * 1000; render(cur); show(); };
+function show() { scrub.value = cur; timeEl.textContent = `${cur.toFixed(2)} / ${DURATION.toFixed(2)}`; }
+function loop(now) {
+  if (playing) {
+    const e = (now - startAt) / 1000;
+    cur = Math.min(e % (DURATION + 1.5), DURATION);
+    render(cur); show();
+  }
+  requestAnimationFrame(loop);
+}
+document.fonts.load(`600 80px ${FONT}`).catch(() => {}).then(() => document.fonts.ready).then(() => {
+  render(0);
+  window.animationReady = true;
+  if (!EXPORT) { startAt = performance.now(); requestAnimationFrame(loop); }
+});
+</script>
+</body>
+</html>
