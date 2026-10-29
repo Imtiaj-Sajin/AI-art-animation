@@ -1,0 +1,345 @@
+{
+  "title": "The Wow! Signal (Short)",
+  "format": "vertical 1080x1920, YouTube Shorts, max 68 s",
+  "voice": "am_michael",
+  "speed": 0.95,
+  "lang": "en-us",
+  "scenePad": 0.4,
+  "tail": 1.4,
+  "soundscape": {
+    "hook": {
+      "wind": 0.25,
+      "muffle": 0
+    },
+    "ear": {
+      "wind": 0.35,
+      "muffle": 0
+    },
+    "printout": {
+      "wind": 0.1,
+      "muffle": 1
+    },
+    "hydrogen": {
+      "wind": 0.15,
+      "muffle": 1
+    },
+    "search": {
+      "wind": 0.3,
+      "muffle": 0
+    },
+    "end": {
+      "wind": 0.35,
+      "muffle": 0
+    },
+    "outro": {
+      "wind": 0.1,
+      "muffle": 1
+    }
+  },
+  "music": {
+    "hook": {
+      "chord": [
+        "D2",
+        "A2",
+        "E3",
+        "A3"
+      ],
+      "pad": 0.85,
+      "piano": 0.0,
+      "pulse": 0.6
+    },
+    "ear": {
+      "chord": [
+        "F2",
+        "C3",
+        "G3",
+        "A3"
+      ],
+      "pad": 0.6,
+      "piano": 0.6,
+      "pulse": 0.0
+    },
+    "printout": {
+      "chord": [
+        "A1",
+        "E2",
+        "C3",
+        "E3"
+      ],
+      "pad": 0.75,
+      "piano": 0.3,
+      "pulse": 0.8
+    },
+    "hydrogen": {
+      "chord": [
+        "Bb1",
+        "F2",
+        "D3",
+        "A3"
+      ],
+      "pad": 0.7,
+      "piano": 0.7,
+      "pulse": 0.0
+    },
+    "search": {
+      "chord": [
+        "G1",
+        "D2",
+        "Bb2",
+        "D3"
+      ],
+      "pad": 0.7,
+      "piano": 0.4,
+      "pulse": 0.3
+    },
+    "end": {
+      "chord": [
+        "D2",
+        "A2",
+        "F3",
+        "A3"
+      ],
+      "pad": 0.6,
+      "piano": 0.7,
+      "pulse": 0.0
+    },
+    "outro": {
+      "chord": [
+        "D2",
+        "A2",
+        "F3",
+        "A3"
+      ],
+      "pad": 0.5,
+      "piano": 0.6,
+      "pulse": 0.0
+    }
+  },
+  "lines": [
+    {
+      "id": "h1",
+      "scene": "hook",
+      "text": "In 1977, a telescope caught a signal from deep space.",
+      "say": "In nineteen seventy-seven, a telescope caught a signal from deep space.",
+      "lead": 0.3,
+      "pause": 0.3,
+      "sfx": [
+        {
+          "type": "blip",
+          "at": 1.6
+        }
+      ]
+    },
+    {
+      "id": "h2",
+      "scene": "hook",
+      "text": "It lasted 72 seconds...",
+      "say": "It lasted seventy-two seconds...",
+      "pause": 0.25
+    },
+    {
+      "id": "h3",
+      "scene": "hook",
+      "text": "and it never came back.",
+      "pause": 0.6,
+      "sfx": [
+        {
+          "type": "boom",
+          "at": 0.8
+        }
+      ]
+    },
+    {
+      "id": "e1",
+      "scene": "ear",
+      "text": "Big Ear, in Ohio, was listening for radio signals from other worlds.",
+      "pause": 0.25
+    },
+    {
+      "id": "e2",
+      "scene": "ear",
+      "text": "Mostly, it heard noise.",
+      "pause": 0.35,
+      "sfx": [
+        {
+          "type": "printer",
+          "at": 0.0,
+          "dur": 2.0
+        }
+      ]
+    },
+    {
+      "id": "p1",
+      "scene": "printout",
+      "text": "Then astronomer Jerry Ehman saw this on the printout.",
+      "pause": 0.3
+    },
+    {
+      "id": "p2a",
+      "scene": "printout",
+      "text": "6",
+      "say": "Six.",
+      "pause": 0.42,
+      "sfx": [
+        {
+          "type": "blip",
+          "at": 0.0,
+          "dur": 0.25,
+          "pitch": 0.6
+        }
+      ]
+    },
+    {
+      "id": "p2b",
+      "scene": "printout",
+      "text": "E",
+      "say": "E.",
+      "pause": 0.42,
+      "sfx": [
+        {
+          "type": "blip",
+          "at": 0.0,
+          "dur": 0.25,
+          "pitch": 1.4
+        }
+      ]
+    },
+    {
+      "id": "p2c",
+      "scene": "printout",
+      "text": "Q",
+      "say": "Q.",
+      "pause": 0.42,
+      "sfx": [
+        {
+          "type": "blip",
+          "at": 0.0,
+          "dur": 0.25,
+          "pitch": 2.6
+        }
+      ]
+    },
+    {
+      "id": "p2d",
+      "scene": "printout",
+      "text": "U",
+      "say": "U.",
+      "pause": 0.42,
+      "sfx": [
+        {
+          "type": "blip",
+          "at": 0.0,
+          "dur": 0.25,
+          "pitch": 3.0
+        }
+      ]
+    },
+    {
+      "id": "p2e",
+      "scene": "printout",
+      "text": "J",
+      "say": "J.",
+      "pause": 0.42,
+      "sfx": [
+        {
+          "type": "blip",
+          "at": 0.0,
+          "dur": 0.25,
+          "pitch": 1.9
+        }
+      ]
+    },
+    {
+      "id": "p2f",
+      "scene": "printout",
+      "text": "5",
+      "say": "Five.",
+      "pause": 0.5,
+      "sfx": [
+        {
+          "type": "blip",
+          "at": 0.0,
+          "dur": 0.25,
+          "pitch": 0.5
+        }
+      ]
+    },
+    {
+      "id": "p3",
+      "scene": "printout",
+      "text": "The signal shot far above the noise. He circled it, and wrote: Wow!",
+      "pause": 0.5,
+      "sfx": [
+        {
+          "type": "scratch",
+          "at": 2.4
+        },
+        {
+          "type": "boom",
+          "at": 3.6
+        }
+      ]
+    },
+    {
+      "id": "y1",
+      "scene": "hydrogen",
+      "text": "It came in on the hydrogen frequency, right where scientists expected an alien signal might be.",
+      "pause": 0.4
+    },
+    {
+      "id": "s1",
+      "scene": "search",
+      "text": "Astronomers have searched that patch of sky for decades.",
+      "pause": 0.25
+    },
+    {
+      "id": "s2",
+      "scene": "search",
+      "text": "Not once.",
+      "pause": 0.35,
+      "sfx": [
+        {
+          "type": "boom",
+          "at": 0.3
+        }
+      ]
+    },
+    {
+      "id": "t1",
+      "scene": "search",
+      "text": "A flaring hydrogen cloud? Interference? Nothing has been proven.",
+      "pause": 0.4
+    },
+    {
+      "id": "d1",
+      "scene": "end",
+      "text": "In 1998, Big Ear was torn down for houses and a golf course.",
+      "say": "In nineteen ninety-eight, Big Ear was torn down for houses and a golf course.",
+      "pause": 0.4
+    },
+    {
+      "id": "o1",
+      "scene": "outro",
+      "text": "So... nature, or someone saying hello?",
+      "pause": 0.3,
+      "sfx": [
+        {
+          "type": "musicbox",
+          "at": -0.2
+        }
+      ]
+    },
+    {
+      "id": "o2",
+      "scene": "outro",
+      "text": "Keep watching. Keep learning. Join the Owl Society.",
+      "pause": 0.8,
+      "sfx": [
+        {
+          "type": "hoot",
+          "at": 2.6
+        }
+      ]
+    }
+  ]
+}

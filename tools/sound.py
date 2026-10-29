@@ -215,11 +215,50 @@ def sfx_wave():
     return reverb(swell * 1.2 + crash * 1.3, 0.3) * 0.8 + boom * 0.6
 
 
+def sfx_blip(dur=1.4, pitch=1.0):
+    """Radio-telescope signal: a pure tone that swells and fades with a slight warble (pitch scales it)."""
+    n = int((dur + 0.6) * SR)
+    t = np.arange(n) / SR
+    f = 620 * (0.7 + 0.3 * pitch) * (1 + 0.004 * np.sin(2 * np.pi * 7 * t))
+    tone = np.sin(2 * np.pi * np.cumsum(f) / SR)
+    env = np.sin(np.pi * np.clip(t / dur, 0, 1)) ** 2
+    hiss = bp(noise(n), 1500, 5000) * 0.08 * env
+    return reverb((tone * 0.35 + hiss) * env, 0.35) * 0.5 * (0.6 + 0.4 * min(pitch, 3) / 3)
+
+
+def sfx_static(dur=1.5):
+    n = int(dur * SR)
+    t = np.arange(n) / SR
+    crackle = signal.lfilter([1], [1, -0.4], (rng.random(n) > 0.995) * noise(n)) * 0.6
+    hiss = bp(noise(n), 900, 6000) * (0.5 + 0.5 * smooth_random(n, 6)) * 0.25
+    env = np.minimum(1, t / 0.05) * np.minimum(1, (dur - t) / 0.3)
+    return (crackle + hiss) * env * 0.5
+
+
+def sfx_printer(dur=2.0):
+    """Dot-matrix printer chatter: bursts of fast clicks, line by line."""
+    n = int(dur * SR)
+    out = np.zeros(n)
+    m = int(0.006 * SR)
+    click = hp(noise(m), 2000) * np.exp(-np.arange(m) / SR * 700)
+    at = 0.0
+    while at < dur - 0.05:
+        line_end = at + 0.28
+        while at < min(line_end, dur - 0.01):
+            s = int(at * SR)
+            out[s:s + m] += click[: n - s] * (0.6 + 0.4 * rng.random())
+            at += 0.011
+        at += 0.12                          # carriage return
+    return reverb(bp(out, 1500, 7000), 0.15) * 0.45
+
+
 SFX = {
     "boom": lambda c: sfx_boom(), "thunder": lambda c: sfx_thunder(), "hoot": lambda c: sfx_hoot(),
     "musicbox": lambda c: sfx_musicbox(), "horn": lambda c: sfx_horn(), "flare": lambda c: sfx_flare(),
     "ticks": lambda c: sfx_ticks(c.get("dur", 3.0)), "door": lambda c: sfx_door(),
     "scratch": lambda c: sfx_scratch(), "wave": lambda c: sfx_wave(),
+    "blip": lambda c: sfx_blip(c.get("dur", 1.4), c.get("pitch", 1.0)),
+    "static": lambda c: sfx_static(c.get("dur", 1.5)), "printer": lambda c: sfx_printer(c.get("dur", 2.0)),
 }
 
 
