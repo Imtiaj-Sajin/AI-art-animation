@@ -1,0 +1,52 @@
+{
+  "title": "The Vanishing at Flannan Isles (Short)",
+  "format": "vertical 1080x1920, YouTube Shorts",
+  "voice": "am_michael",
+  "speed": 0.95,
+  "lang": "en-us",
+  "scenePad": 0.45,
+  "tail": 1.6,
+  "soundscape": {
+    "hook":    { "sea": 0.25, "wind": 0.55, "rain": 0.35, "muffle": 1 },
+    "island":  { "sea": 0.7,  "wind": 0.75, "rain": 0.6,  "muffle": 0 },
+    "inside":  { "sea": 0.15, "wind": 0.3,  "rain": 0,    "muffle": 1 },
+    "coats":   { "sea": 0.25, "wind": 0.5,  "rain": 0.35, "muffle": 1 },
+    "landing": { "sea": 0.7,  "wind": 0.45, "rain": 0,    "muffle": 0 },
+    "wave":    { "sea": 0.85, "wind": 0.7,  "rain": 0.25, "muffle": 0 },
+    "outro":   { "sea": 0.08, "wind": 0.1,  "rain": 0,    "muffle": 1 }
+  },
+  "music": {
+    "hook":    { "chord": ["D2", "A2", "F3", "A3"],   "pad": 0.85, "piano": 0.0, "pulse": 0.7 },
+    "island":  { "chord": ["D2", "A2", "D3", "Eb3"],  "pad": 0.8,  "piano": 0.2, "pulse": 0.5 },
+    "inside":  { "chord": ["A1", "E2", "C3", "E3"],   "pad": 0.75, "piano": 0.4, "pulse": 0.5 },
+    "coats":   { "chord": ["Bb1", "F2", "Db3", "F3"], "pad": 0.8,  "piano": 0.3, "pulse": 0.6 },
+    "landing": { "chord": ["G1", "D2", "Bb2", "F3"],  "pad": 0.65, "piano": 0.4, "pulse": 0.3 },
+    "wave":    { "chord": ["D2", "A2", "D3", "Eb3"],  "pad": 0.95, "piano": 0.0, "pulse": 1.0 },
+    "outro":   { "chord": ["D2", "A2", "F3", "A3"],   "pad": 0.5,  "piano": 0.6, "pulse": 0.0 }
+  },
+  "lines": [
+    { "id": "h1", "scene": "hook", "text": "Three men vanished from this island.", "lead": 0.5, "pause": 0.45, "sfx": [{ "type": "thunder", "at": -0.4 }] },
+    { "id": "h2", "scene": "hook", "text": "Two of them took their coats.", "pause": 0.35 },
+    { "id": "h3", "scene": "hook", "text": "One of them... didn't.", "pause": 0.8, "sfx": [{ "type": "boom", "at": 0.6 }] },
+
+    { "id": "i1", "scene": "island", "text": "December, 1900. The Flannan Isles, off the coast of Scotland.", "say": "December, nineteen hundred. The Flannan Isles, off the coast of Scotland.", "pause": 0.35 },
+    { "id": "i2", "scene": "island", "text": "A passing ship noticed the lighthouse had gone dark.", "pause": 0.35, "sfx": [{ "type": "boom", "at": 2.4 }] },
+    { "id": "i3", "scene": "island", "text": "The relief boat couldn't reach the island until eleven days later.", "pause": 0.5 },
+
+    { "id": "n1", "scene": "inside", "text": "The gate was shut. The beds were empty.", "pause": 0.35, "sfx": [{ "type": "ticks", "at": 0.6, "dur": 3.6 }] },
+    { "id": "n2", "scene": "inside", "text": "And the clock on the wall... had stopped.", "pause": 0.9, "sfx": [{ "type": "ticks", "at": 0.0, "dur": 1.4 }, { "type": "boom", "at": 1.8 }] },
+
+    { "id": "c1", "scene": "coats", "text": "Two sets of oilskins were missing. But Donald McArthur's were still there.", "pause": 0.45, "sfx": [{ "type": "boom", "at": 3.4 }] },
+    { "id": "c2", "scene": "coats", "text": "Why would a man run into a winter storm... without his coat?", "pause": 0.8, "sfx": [{ "type": "door", "at": 2.4 }] },
+
+    { "id": "l1", "scene": "landing", "text": "At the west landing, iron railings were bent and twisted.", "pause": 0.3 },
+    { "id": "l2", "scene": "landing", "text": "A rock of over a ton was torn loose. A box of ropes, 33 metres above the sea, was smashed.", "say": "A rock of over a ton was torn loose. A box of ropes, thirty-three metres above the sea, was smashed.", "pause": 0.6 },
+
+    { "id": "w1", "scene": "wave", "text": "The most likely answer? A monster wave.", "pause": 0.35 },
+    { "id": "w2", "scene": "wave", "text": "Two men went down to secure the ropes. McArthur may have seen it coming... and ran to warn them.", "pause": 1.7, "sfx": [] },
+    { "id": "w3", "scene": "wave", "text": "None of them were ever found.", "pause": 0.9, "sfx": [{ "type": "wave", "at": -2.4 }] },
+
+    { "id": "o1", "scene": "outro", "text": "The full story is on House of Owls.", "pause": 0.3, "sfx": [{ "type": "musicbox", "at": -0.3 }] },
+    { "id": "o2", "scene": "outro", "text": "Keep watching. Keep learning... and become a member of the Owl Society.", "pause": 1.2, "sfx": [{ "type": "hoot", "at": 3.6 }] }
+  ]
+}

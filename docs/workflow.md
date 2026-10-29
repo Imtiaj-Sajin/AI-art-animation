@@ -86,3 +86,18 @@ npm run render -- episodes/NN-slug       # out/NN-slug.mp4
 Fill `episodes/NN-slug/youtube.md` (title, description with sources, chapters from the timeline, tags).
 Upload `build/captions.srt` as subtitles. Make a thumbnail from the strongest still (big face or object,
 3–4 words maximum).
+
+## 7. YouTube Shorts edition
+
+A Short must be vertical and at most 3 minutes, so it's a **separate edit**, not a resize. Reference:
+`episodes/01-flannan-isles-short/`.
+
+- Folder `episodes/NN-slug-short/` with its own `script.json` (60–80 s): 2-second text hook, the core mystery,
+  the strongest evidence, the theory, then "The full story is on House of Owls" + Owl Society line.
+- `index.html` calls `HD.setSize(1080, 1920)` before anything else, renders at 30 fps and burns in
+  word-by-word captions (Fredoka, orange current word) at y ≈ 1345.
+- Load the long episode's `scenes-1.js` for the `EP` helpers, then a `scenes-short.js` with scenes
+  **composed for vertical** (stacked panels, cliff sections, a vertical peg wall).
+- Safe zones (toggle "safe zones" in the preview): keep key art and text inside x 60–940, y 160–1460.
+  The top bar, the right-hand buttons (x > 960, y 900–1500) and the bottom title overlay (y > 1500) cover the rest.
+- Same pipeline: `npm run voice`, `npm run sound`, `npm run stills`, `npm run render` on the short folder.

@@ -47,6 +47,7 @@ npm run stills -- 12,95,270 episodes/01-flannan-isles --outdir out/stills       
 | `tools/sound.py` | Procedural sound design: sea, wind, rain, drone, thunder, owl hoot, music box, horn... |
 | `tools/render.mjs` | Headless-Chrome frame renderer + FFmpeg encode (parallel workers) |
 | `episodes/NN-slug/` | One folder per episode: `research.md`, `script.json`, `index.html`, `scenes-*.js`, `youtube.md` |
+| `episodes/NN-slug-short/` | The vertical YouTube Shorts edit of that episode (1080×1920, burned-in captions) |
 | `docs/` | Workflow, style guide, episode ideas, [voice upgrade guide](docs/voice-upgrade.md) |
 | `docs/context/` | Session logs: full history of decisions and fixes for the next AI session |
 | `.claude/skills/new-episode/` | Claude skill: how to make the next episode in this house style |

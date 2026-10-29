@@ -32,9 +32,11 @@ First read `CLAUDE.md`, `docs/workflow.md` and `docs/style-guide.md`. Episode 01
    behind them (`HD.occlude`). Iterate until every scene looks premium.
 7. **Sound:** `npm run sound -- episodes/NN-slug`.
 8. **Render:** `npm run render -- episodes/NN-slug` (runs in the background; ~10–15 min for 5 min).
-9. **Publish kit:** write `youtube.md` (title options, description with sources and chapters from
+9. **Shorts edit:** make `episodes/NN-slug-short/` (see `docs/workflow.md` §7): a 60–80 s vertical cut
+   with burned-in captions that points viewers to the full episode.
+10. **Publish kit:** write `youtube.md` (title options, description with sources and chapters from
    `build/timeline.json`, tags) and a thumbnail still. Update `docs/episode-ideas.md` to ✅.
-10. **Write a session log** in `docs/context/YYYY-MM-DD-<topic>.md` (user requests, decisions, problems
+11. **Write a session log** in `docs/context/YYYY-MM-DD-<topic>.md` (user requests, decisions, problems
     and fixes, open items). Don't commit or push: the user writes their own commit messages and pushes.
 
 ## Gotchas

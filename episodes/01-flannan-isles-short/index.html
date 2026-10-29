@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Flannan Isles Short · House of Owls</title>
+<link rel="stylesheet" href="../../lib/fonts/fonts.css">
+<style>
+  html, body { margin: 0; height: 100%; background: #111017; color: #e9e2d4; font-family: system-ui, sans-serif; }
+  body { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .stage { width: min(94vw, calc((100vh - 70px) * 9 / 16)); }
+  canvas { display: block; width: 100%; aspect-ratio: 9 / 16; background: #000; border-radius: 10px; box-shadow: 0 12px 40px rgba(0,0,0,.6); }
+  .bar { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+  button, select { background: #f3ecdd; color: #1b2140; border: 0; border-radius: 6px; padding: 6px 10px; font: 600 13px system-ui, sans-serif; cursor: pointer; }
+  input[type=range] { flex: 1; accent-color: #f47a3a; min-width: 0; }
+  #time { font-variant-numeric: tabular-nums; font-size: 12px; opacity: .8; }
+  label { font-size: 12px; opacity: .85; display: flex; gap: 4px; align-items: center; }
+  body.export .bar { display: none; }
+</style>
+</head>
+<body>
+<div class="stage">
+  <canvas id="c"></canvas>
+  <div class="bar">
+    <button id="play">Play</button>
+    <select id="jump"></select>
+    <input id="scrub" type="range" min="0" step="0.01" value="0">
+    <span id="time"></span>
+    <label><input type="checkbox" id="safe"> safe zones</label>
+  </div>
+</div>
+<audio id="audio" src="build/mix.wav" preload="auto"></audio>
+<script src="build/timeline.js"></script>
+<script src="../../lib/hand.js"></script>
+<script>HD.setSize(1080, 1920);</script>
+<script src="../../lib/owl.js"></script>
+<script src="../01-flannan-isles/scenes-1.js"></script>
+<script src="scenes-short.js"></script>
+<script>
+'use strict';
+const { W, H, clamp, prog } = HD;
+const TL = window.TIMELINE;
+const DURATION = TL.duration, FPS = 30;
+const cvs = document.getElementById('c');
+cvs.width = W; cvs.height = H;
+const out = cvs.getContext('2d');
+const stage = new HD.Stage();
+const bufA = HD.canvas(), bufB = HD.canvas(), mask = HD.canvas(), tmp = HD.canvas();
+const lineStart = {}, lineEnd = {};
+for (const ln of TL.lines) { lineStart[ln.id] = ln.start; lineEnd[ln.id] = ln.end; }
+
+function kit(sc, t) {
+  return {
+    t, lt: t - sc.start, start: sc.start, end: sc.end, dur: sc.end - sc.start,
+    at: id => lineStart[id], endOf: id => lineEnd[id],
+    u: () => clamp((t - sc.start) / (sc.end - sc.start)),
+  };
+}
+function drawScene(i, t, target) {
+  const sc = TL.scenes[i], def = SCENES[sc.id];
+  const L = stage.begin(t, t - sc.start);
+  if (def) def.draw(L, kit(sc, t));
+  stage.compose(target.getContext('2d'), L);
+}
+const bleedWashes = Array.from({ length: 9 }, (_, i) => HD.makeWash(400 + i, 11, 1));
+function bleedMask(p, seed) {
+  const m = mask.getContext('2d');
+  m.setTransform(1, 0, 0, 1, 0, 0); m.clearRect(0, 0, W, H);
+  m.fillStyle = '#fff';
+  for (let i = 0; i < 9; i++) {
+    const x = HD.h2(seed, i) * W, y = HD.h2(seed, i + 20) * H;
+    const r = Math.max(0, p * 1900 * (0.55 + HD.h2(seed, i + 40) * 0.6) - HD.h2(seed, i + 60) * 300);
+    if (r <= 0) continue;
+    m.save(); m.translate(x, y); m.rotate(i); m.scale(r, r); m.fill(bleedWashes[i][0][0]); m.restore();
+  }
+}
+function renderScenes(t) {
+  let i = TL.scenes.findIndex(s => t < s.end);
+  if (i < 0) i = TL.scenes.length - 1;
+  const sc = TL.scenes[i], def = SCENES[sc.id] || {};
+  const enter = def.enter || { type: 'bleed', dur: 0.9 };
+  const p = i > 0 ? prog(t, sc.start, enter.dur) : 1;
+  if (p >= 1 || enter.type === 'cut') { drawScene(i, t, cvs); return sc; }
+  drawScene(i - 1, t, bufA);
+  drawScene(i, t, bufB);
+  out.setTransform(1, 0, 0, 1, 0, 0); out.globalCompositeOperation = 'source-over'; out.globalAlpha = 1;
+  out.drawImage(bufA, 0, 0);
+  if (enter.type === 'fade') {
+    out.globalAlpha = HD.smooth(p); out.drawImage(bufB, 0, 0); out.globalAlpha = 1;
+  } else {
+    bleedMask(HD.easeInOut(p), i * 13);
+    const tc = tmp.getContext('2d');
+    tc.globalCompositeOperation = 'source-over'; tc.clearRect(0, 0, W, H); tc.drawImage(bufB, 0, 0);
+    tc.globalCompositeOperation = 'destination-in'; tc.drawImage(mask, 0, 0);
+    tc.globalCompositeOperation = 'source-over';
+    out.drawImage(tmp, 0, 0);
+  }
+  return sc;
+}
+
+// ---------- burned-in captions: the spoken word lights up orange ----------
+const CAP_Y = 1345, CAP_W = 900, CAP_SIZE = 64, CAP_LH = 78;
+function captions(t, sc) {
+  if (sc.id === 'outro') return;
+  const idx = TL.lines.findIndex(l => l.text && t >= l.start - 0.05 && t < (TL.lines[TL.lines.indexOf(l) + 1]?.start ?? l.end + 0.6) && t < l.end + 0.7);
+  if (idx < 0) return;
+  const ln = TL.lines[idx];
+  const words = ln.text.split(/\s+/);
+  const weights = words.map(w => w.replace(/[^\w']/g, '').length + 1.5);
+  const total = weights.reduce((a, b) => a + b, 0);
+  const u = clamp((t - ln.start) / Math.max(0.1, ln.end - ln.start)) * total;
+  let acc = 0, cur = words.length;
+  for (let i = 0; i < words.length; i++) { acc += weights[i]; if (u < acc) { cur = i; break; } }
+  const c = out;
+  c.setTransform(1, 0, 0, 1, 0, 0);
+  c.font = `700 ${CAP_SIZE}px ${HD.FONT.brand}`;
+  c.textBaseline = 'alphabetic'; c.lineJoin = 'round';
+  const space = c.measureText(' ').width;
+  const rows = [[]]; let rowW = 0;
+  for (let i = 0; i < words.length; i++) {
+    const w = c.measureText(words[i]).width;
+    if (rowW > 0 && rowW + space + w > CAP_W) { rows.push([]); rowW = 0; }
+    rows[rows.length - 1].push({ i, w });
+    rowW += (rowW > 0 ? space : 0) + w;
+  }
+  const pop = HD.easeOutBack(prog(t, ln.start - 0.05, 0.18));
+  const y0 = CAP_Y - (rows.length - 1) * CAP_LH / 2;
+  c.save(); c.translate(W / 2, y0); c.scale(0.9 + 0.1 * pop, 0.9 + 0.1 * pop); c.globalAlpha = clamp(pop * 1.5);
+  rows.forEach((row, r) => {
+    const rw = row.reduce((a, x) => a + x.w, 0) + space * (row.length - 1);
+    let x = -rw / 2;
+    for (const { i, w } of row) {
+      const y = r * CAP_LH;
+      c.lineWidth = 14; c.strokeStyle = '#0b0d1c'; c.strokeText(words[i], x, y);
+      c.fillStyle = i === cur ? '#ff8a3d' : i < cur ? '#fff6e6' : 'rgba(255,246,230,0.82)';
+      c.fillText(words[i], x, y);
+      x += w + space;
+    }
+  });
+  c.restore();
+}
+let showSafe = false;
+function safeZones() {
+  if (!showSafe) return;
+  out.setTransform(1, 0, 0, 1, 0, 0);
+  out.fillStyle = 'rgba(255,0,80,0.22)';
+  out.fillRect(0, 0, W, 150);            // top bar
+  out.fillRect(0, 1500, W, 420);         // title, channel and description overlay
+  out.fillRect(960, 900, 120, 600);      // like/comment/share buttons
+}
+function render(t) {
+  t = clamp(t, 0, DURATION - 1e-3);
+  const sc = renderScenes(t);
+  captions(t, sc);
+  safeZones();
+}
+
+// ---------- export hooks ----------
+const params = new URLSearchParams(location.search);
+const EXPORT = params.has('export');
+if (EXPORT) document.body.classList.add('export');
+window.ANIM = {
+  duration: DURATION, fps: FPS, audio: 'build/mix.wav',
+  frame(t) { render(t); return cvs.toDataURL('image/png').split(',')[1]; },
+};
+
+// ---------- preview player ----------
+const audio = document.getElementById('audio');
+const playBtn = document.getElementById('play'), scrub = document.getElementById('scrub'), timeEl = document.getElementById('time');
+const jump = document.getElementById('jump'), safeBox = document.getElementById('safe');
+scrub.max = DURATION;
+for (const s of TL.scenes) jump.add(new Option(`${s.id} (${s.start.toFixed(0)}s)`, s.start));
+let playing = false, cur = +(params.get('t') || 0), clock = 0, clockAt = 0;
+const fmt = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+function now() { return audio.duration && !audio.paused ? audio.currentTime : clock + (performance.now() - clockAt) / 1000; }
+function setTime(t) { cur = clamp(t, 0, DURATION); audio.currentTime = cur; clock = cur; clockAt = performance.now(); paint(); }
+function paint() { render(cur); scrub.value = cur; timeEl.textContent = `${fmt(cur)} / ${fmt(DURATION)}`; }
+playBtn.onclick = () => {
+  playing = !playing; playBtn.textContent = playing ? 'Pause' : 'Play';
+  clock = cur; clockAt = performance.now();
+  if (playing) { audio.currentTime = cur; audio.play().catch(() => {}); } else audio.pause();
+};
+scrub.oninput = () => setTime(+scrub.value);
+jump.onchange = () => setTime(+jump.value);
+safeBox.onchange = () => { showSafe = safeBox.checked; paint(); };
+function loop() {
+  if (playing) { cur = now(); if (cur >= DURATION) { playing = false; playBtn.textContent = 'Play'; } paint(); }
+  requestAnimationFrame(loop);
+}
+document.fonts.ready.then(() => Promise.all(['600 40px Caveat', '700 40px Caveat', '400 40px "IM Fell English"', 'italic 400 40px "IM Fell English"', '700 40px Fredoka'].map(f => document.fonts.load(f)))).then(() => {
+  paint();
+  window.animationReady = true;
+  if (!EXPORT) requestAnimationFrame(loop);
+});
+</script>
+</body>
+</html>
